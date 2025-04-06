@@ -1,0 +1,58 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Kanban{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Minhas Tarefas (Kanban)</h2>
+<a href="{% url 'criar_tarefa' %}" class="btn btn-primary mb-3">+ Nova Tarefa</a>
+
+<div class="row">
+    <div class="col-md-4">
+        <h4 class="text-center text-secondary">Inicial</h4>
+        {% for tarefa in tarefas_inicial %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>{{ tarefa.titulo }}</h5>
+                    <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
+                    <small>Prazo: {{ tarefa.prazo }}</small><br>
+                    <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-primary mt-2">Editar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">Sem tarefas</p>
+        {% endfor %}
+    </div>
+
+    <div class="col-md-4">
+        <h4 class="text-center text-warning">Em andamento</h4>
+        {% for tarefa in tarefas_andamento %}
+            <div class="card mb-3 border-warning">
+                <div class="card-body">
+                    <h5>{{ tarefa.titulo }}</h5>
+                    <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
+                    <small>Prazo: {{ tarefa.prazo }}</small><br>
+                    <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-primary mt-2">Editar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">Sem tarefas</p>
+        {% endfor %}
+    </div>
+
+    <div class="col-md-4">
+        <h4 class="text-center text-success">Concluída</h4>
+        {% for tarefa in tarefas_concluida %}
+            <div class="card mb-3 border-success">
+                <div class="card-body">
+                    <h5>{{ tarefa.titulo }}</h5>
+                    <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
+                    <small>Prazo: {{ tarefa.prazo }}</small><br>
+                    <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-primary mt-2">Editar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">Sem tarefas</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

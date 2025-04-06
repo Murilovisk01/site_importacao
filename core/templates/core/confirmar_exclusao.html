@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="col-md-6 offset-md-3">
+    <h2 class="mb-4">Excluir Tarefa</h2>
+    <p>Tem certeza que deseja excluir a tarefa <strong>{{ tarefa.titulo }}</strong>?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sim, excluir</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

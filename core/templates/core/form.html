@@ -1,15 +1,88 @@
 {% extends 'core/base.html' %}
+{% load form_filters %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="col-md-6 offset-md-3">
-    <h2 class="mb-4">{{ titulo }}</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">Salvar</button>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow p-4">
+            <h2 class="mb-4 text-center">{{ titulo }}</h2>
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- campo tipo -->
+                <div class="mb-3">
+                    {{ form.tipo.label_tag }}
+                    {{ form.tipo|add_class:"form-control" }}
+                    {% if form.tipo.errors %}
+                        <div class="text-danger small">{{ form.tipo.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- campo título -->
+                <div class="mb-3">
+                    {{ form.titulo.label_tag }}
+                    {{ form.titulo|add_class:"form-control" }}
+                    {% if form.titulo.errors %}
+                        <div class="text-danger small">{{ form.titulo.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- campo documentacao -->
+                <div class="mb-3">
+                    {{ form.documentacao.label_tag }}
+                    {{ form.documentacao|add_class:"form-control" }}
+                    {% if form.documentacao.errors %}
+                        <div class="text-danger small">{{ form.documentacao.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                {% for field in form %}
+                    {% if field.name != 'tipo' and field.name != 'titulo' and field.name != 'documentacao' %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {{ field|add_class:"form-control" }}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <button type="submit" class="btn btn-success w-100">Salvar</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary w-100 mt-2">Cancelar</a>
+            </form>
+        </div>
+    </div>
 </div>
+
+<!-- script -->
+<script>
+    const tipoSelect = document.getElementById("id_tipo");
+    const tituloInput = document.getElementById("id_titulo");
+    const docInput = document.getElementById("id_documentacao");
+
+    const titulosPadrao = {
+        {% for tipo in form.fields.tipo.queryset %}
+            "{{ tipo.id }}": "{{ tipo.titulo_padrao|escapejs }}",
+        {% endfor %}
+    };
+
+    const roteirosPadrao = {
+        {% for tipo in form.fields.tipo.queryset %}
+            "{{ tipo.id }}": `{{ tipo.roteiro|escapejs }}`,
+        {% endfor %}
+    };
+
+    tipoSelect.addEventListener("change", function () {
+        const tipoId = this.value;
+        if (titulosPadrao[tipoId]) {
+            tituloInput.value = titulosPadrao[tipoId];
+        }
+        if (roteirosPadrao[tipoId] && !docInput.value) {
+            docInput.value = roteirosPadrao[tipoId];
+        }        
+    });
+</script>
 {% endblock %}

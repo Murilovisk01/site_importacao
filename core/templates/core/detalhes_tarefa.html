@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+{% load markdown_decorator %}
+
+{% block title %}Detalhes da Tarefa{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+    <div class="card shadow p-4">
+        <h2>{{ tarefa.titulo }}</h2>
+        <p><strong>Status:</strong> {{ tarefa.get_status_display }}</p>
+        <p><strong>Sistema:</strong> {{ tarefa.sistema }}</p>
+        <p><strong>Tipo:</strong> {{ tarefa.tipo }}</p>
+        <p><strong>Prazo:</strong> {{ tarefa.prazo }}</p>
+        <p><strong>Criado por:</strong> {{ tarefa.criado_por }}</p>
+        <p><strong>Atribuído para:</strong> {{ tarefa.atribuido_para }}</p>
+        <h5>Documentação da Tarefa</h5>
+        <div class="markdown-body">
+            {{ tarefa.documentacao|render_markdown|safe }}
+        </div>
+        <hr>
+        <h5>Comentários</h5>
+
+        <form method="post" class="mb-3" id="comentario-form">
+            {% csrf_token %}
+            <div id="toast-editor" class="mb-3"></div>
+            <textarea name="texto" id="id_texto" hidden></textarea>
+            <button type="submit" class="btn btn-primary">Adicionar Comentário</button>
+        </form>        
+
+        {% for comentario in comentarios %}
+            <div class="border p-2 mb-2">
+                <strong>{{ comentario.autor.username }}</strong>
+                <small class="text-muted float-end">{{ comentario.criado_em|date:"d/m/Y H:i" }}</small>
+                <div class="markdown-body mb-0">
+                    {{ comentario.texto|render_markdown|safe }}
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">Nenhum comentário ainda.</p>
+        {% endfor %}
+
+        <div class="mt-4">
+            <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-primary">Editar</a>
+            {% if user == tarefa.criado_por %}
+                <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-danger ms-2">Excluir</a>
+            {% endif %}
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary ms-2">Voltar</a>
+        </div>
+    </div>
+</div>
+
+<!-- Toast UI Editor CSS e JS -->
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css">
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+<script>
+    const editor = new toastui.Editor({
+        el: document.querySelector('#toast-editor'),
+        height: '300px',
+        initialEditType: 'markdown',
+        previewStyle: 'vertical',
+    });
+
+    const form = document.getElementById('comentario-form');
+    form.addEventListener('submit', function () {
+        document.getElementById('id_texto').value = editor.getMarkdown();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Painel da Equipe{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Equipe: {{ equipe.nome }}</h2>
+<p><strong>Descrição:</strong> {{ equipe.descricao }}</p>
+<p><strong>Código de Acesso:</strong> 
+    <code class="text-success">{{ equipe.codigo_acesso }}</code>
+</p>
+
+<hr>
+
+<h4>Membros da equipe</h4>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Usuário</th>
+            <th>Status</th>
+            <th>Cargo</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for membro in membros %}
+        <tr>
+            <td>{{ membro.user.username }}</td>
+            <td>
+                {% if membro.aprovado %}
+                    <span class="badge bg-success">Aprovado</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if membro.is_gerente %}
+                    Gerente
+                {% else %}
+                    Membro
+                {% endif %}
+            </td>
+            <!-- Ações que virão em breve -->
+            <td class="d-flex gap-2">
+                {% if not membro.aprovado %}
+                    <a href="{% url 'aprovar_membro' membro.id %}" class="btn btn-sm btn-success">Aprovar</a>
+                {% endif %}
+            
+                {% if membro.aprovado %}
+                
+                    <a href="{% url 'toggle_gerente' membro.id %}" class="btn btn-sm btn-warning">
+                        {% if membro.is_gerente %}Demover a Membro{% else %}Promover a Gerente{% endif %}
+                    </a>
+                    <a href="{% url 'remover_membro' membro.id %}" class="btn btn-sm btn-outline-danger">Remover</a>
+
+                {% endif %}
+                
+            </td>       
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center">Sem outros membros na equipe.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'dashboard' %}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

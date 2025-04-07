@@ -1,0 +1,134 @@
+MANUAL DE COMANDOS DJANGO - manage.py
+=====================================
+
+🔰 INÍCIO RÁPIDO
+----------------
+Criar um novo projeto Django:
+    django-admin startproject nome_do_projeto
+
+Criar um novo app dentro do projeto:
+    python manage.py startapp nome_do_app
+
+
+🚀 SERVIDOR DE DESENVOLVIMENTO
+-------------------------------
+Iniciar o servidor local:
+    python manage.py runserver
+
+Iniciar com porta customizada:
+    python manage.py runserver 8080
+
+
+🧱 BANCO DE DADOS
+------------------
+Criar migrações com base nos models:
+    python manage.py makemigrations
+
+Aplicar as migrações no banco:
+    python manage.py migrate
+
+Ver histórico de migrações:
+    python manage.py showmigrations
+
+
+🛠️ USUÁRIOS E ADMIN
+---------------------
+Criar um superusuário (para acessar /admin):
+    python manage.py createsuperuser
+
+
+🧪 TESTES E DEBUG
+------------------
+Abrir shell interativo com contexto do Django:
+    python manage.py shell
+
+Rodar os testes:
+    python manage.py test
+
+Ver todos os comandos disponíveis:
+    python manage.py help
+
+
+🧹 LIMPEZA E UTILIDADES
+------------------------
+Apagar dados do banco (mas manter estrutura):
+    python manage.py flush
+    ⚠️ Isso apaga todos os dados e pede confirmação.
+
+Checar erros no projeto:
+    python manage.py check
+
+
+🔌 OUTROS COMANDOS ÚTEIS
+--------------------------
+Exportar dependências do projeto:
+    pip freeze > requirements.txt
+
+Instalar dependências de um requirements.txt:
+    pip install -r requirements.txt
+
+
+
+Passo a passo: Subir um Projeto Django em Servidor Windows
+
+1. Instalar o Python
+Baixe e instale o Python mais recente (recomendado 3.12.x ou compatível):
+https://www.python.org/downloads/
+Durante a instalação, marque a opção:
+Add Python to PATH.
+
+2. Instalar e Configurar Banco de Dados
+Caso seu projeto use PostgreSQL, MySQL, ou SQL Server, instale o banco correspondente e crie o banco e usuário necessários para o projeto.
+
+3. Preparar o Projeto Django
+Copie seu projeto para uma pasta específica, exemplo:
+C:\projetos\meu_projeto
+
+Criar Ambiente Virtual
+No prompt execute:
+cd C:\projetos\meu_projeto
+python -m venv venv
+venv\Scripts\activate
+
+Instalar dependências
+pip install -r requirements.txt
+
+4. Configuração do Projeto
+settings.py:
+ALLOWED_HOSTS = ['ip-do-servidor', 'dominio.com']
+Banco de Dados configurado corretamente
+Arquivos estáticos:
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+python manage.py collectstatic
+
+5. Testar o Projeto
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+
+Navegador: http://ip-do-servidor:8000
+
+6. Instalar IIS e configurar IIS para Django
+Ativar IIS pelo Painel de Controle do Windows
+Instalar wfastcgi:
+pip install wfastcgi
+wfastcgi-enable
+
+Configurar IIS Manager:
+Adicione módulo FastCGI com executável:
+C:\projetos\meu_projeto\venv\Scripts\python.exe|C:\projetos\meu_projeto\venv\Lib\site-packages\wfastcgi.py
+
+7. Configurar Variáveis do IIS para Django
+No IIS > Configurações do Aplicativo:
+DJANGO_SETTINGS_MODULE: nome_projeto.settings
+WSGI_HANDLER: django.core.wsgi.get_wsgi_application()
+PYTHONPATH: C:\projetos\meu_projeto
+
+8. Reiniciar IIS e Testar
+iisreset
+
+No navegador:
+http://ip-do-servidor
+
+Seu projeto Django agora está rodando com sucesso no Windows Server!

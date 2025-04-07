@@ -6,6 +6,33 @@
 <h2 class="mb-4">Minhas Tarefas (Kanban)</h2>
 <a href="{% url 'criar_tarefa' %}" class="btn btn-primary mb-3">+ Nova Tarefa</a>
 
+<form method="get" class="row mb-4 g-2">
+    <div class="col-md-4">
+        <select name="membro" class="form-select">
+            <option value="">Todos os membros</option>
+            {% for membro in membros %}
+                <option value="{{ membro.id }}" {% if filtro_membro == membro.id %}selected{% endif %}>
+                    {{ membro.username }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por título" value="{{ busca }}">
+    </div>
+
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-primary w-100">Filtrar</button>
+    </div>
+
+    {% if filtro_membro or busca %}
+    <div class="col-md-2">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-danger w-100">Limpar</a>
+    </div>
+    {% endif %}
+</form>
+
 <div class="row">
     <div class="col-md-4">
         <h4 class="text-center text-secondary">Inicial</h4>
@@ -15,7 +42,12 @@
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
-                    <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-primary mt-2">Editar</a>
+                    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
+
+                    {% if user == tarefa.criado_por %}
+                        <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
+                    {% endif %}
+
                 </div>
             </div>
         {% empty %}
@@ -31,7 +63,11 @@
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
-                    <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-primary mt-2">Editar</a>
+                    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
+
+                    {% if user == tarefa.criado_por %}
+                        <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
+                    {% endif %}
                 </div>
             </div>
         {% empty %}
@@ -47,7 +83,11 @@
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
-                    <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-primary mt-2">Editar</a>
+                    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
+
+                    {% if user == tarefa.criado_por %}
+                        <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
+                    {% endif %}
                 </div>
             </div>
         {% empty %}

@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+{% load form_filters %}
+
+{% block title %}Criar Conta{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow p-4">
+            <h2 class="text-center mb-4">Criar Conta</h2>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    {{ form.username.label_tag }}
+                    {{ form.username|add_class:"form-control" }}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.email.label_tag }}
+                    {{ form.email|add_class:"form-control" }}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.senha.label_tag }}
+                    {{ form.senha|add_class:"form-control" }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.repetir_senha.label_tag }}
+                    {{ form.repetir_senha|add_class:"form-control" }}
+                </div>
+
+                <hr>
+                <div class="mb-3 form-check">
+                    {{ form.criar_nova_equipe }}
+                    {{ form.criar_nova_equipe.label_tag }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.nome_equipe.label_tag }}
+                    {{ form.nome_equipe|add_class:"form-control" }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.descricao_equipe.label_tag }}
+                    {{ form.descricao_equipe|add_class:"form-control" }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.codigo_acesso.label_tag }}
+                    {{ form.codigo_acesso|add_class:"form-control" }}
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">Registrar</button>
+                <a href="{% url 'login' %}" class="btn btn-link w-100 mt-2">Já tenho conta</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,7 +3,7 @@
 {% block title %}Kanban{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Minhas Tarefas (Kanban)</h2>
+<h2 class="mb-4">Dashboard Tarefas</h2>
 <a href="{% url 'criar_tarefa' %}" class="btn btn-primary mb-3">+ Nova Tarefa</a>
 
 <form method="get" class="row mb-4 g-2">
@@ -42,6 +42,7 @@
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
+                    <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
                     <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
 
                     {% if user == tarefa.criado_por %}
@@ -63,6 +64,7 @@
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
+                    <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
                     <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
 
                     {% if user == tarefa.criado_por %}
@@ -83,6 +85,7 @@
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
+                    <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
                     <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
 
                     {% if user == tarefa.criado_por %}

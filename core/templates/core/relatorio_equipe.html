@@ -1,0 +1,96 @@
+{% extends 'core/base.html' %}
+{% block title %}Relatório da Equipe{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Relatório da Equipe</h2>
+
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col">
+            <label>De:</label>
+            <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+        </div>
+        <div class="col">
+            <label>Até:</label>
+            <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+        </div>
+        <div class="col">
+            <label>Tipo:</label>
+            <select name="tipo" class="form-select">
+                <option value="">Todos</option>
+                {% for tipo in tipos %}
+                    <option value="{{ tipo.id }}" {% if filtros.tipo_id == tipo.id|stringformat:"s" %}selected{% endif %}>{{ tipo.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col">
+            <label>Status:</label>
+            <select name="status" class="form-select">
+                <option value="">Todos</option>
+                <option value="inicial" {% if filtros.status == 'inicial' %}selected{% endif %}>Inicial</option>
+                <option value="andamento" {% if filtros.status == 'andamento' %}selected{% endif %}>Em andamento</option>
+                <option value="concluida" {% if filtros.status == 'concluida' %}selected{% endif %}>Concluída</option>
+            </select>
+        </div>
+        <div class="col">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{% url 'relatorio_equipe' %}" class="btn btn-secondary ms-2">Limpar Filtros</a>
+        </div>
+    </form>
+
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h6>Total</h6>
+                <h4>{{ total }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h6>Inicial</h6>
+                <h4>{{ inicial }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h6>Em andamento</h6>
+                <h4>{{ andamento }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h6>Concluídas</h6>
+                <h4>{{ concluidas }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <h5>Tarefas por Tipo</h5>
+        <canvas id="graficoTipo" height="120"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('graficoTipo').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for item in tarefas_por_tipo %}'{{ item.tipo__nome }}',{% endfor %}],
+            datasets: [{
+                label: 'Quantidade de Tarefas',
+                data: [{% for item in tarefas_por_tipo %}{{ item.qtd }},{% endfor %}],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    precision: 0
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

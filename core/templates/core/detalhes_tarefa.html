@@ -1,6 +1,5 @@
 {% extends 'core/base.html' %}
 {% load markdown_decorator %}
-
 {% block title %}Detalhes da Tarefa{% endblock %}
 
 {% block content %}
@@ -14,9 +13,9 @@
         <p><strong>Criado por:</strong> {{ tarefa.criado_por }}</p>
         <p><strong>Atribuído para:</strong> {{ tarefa.atribuido_para }}</p>
         <h5><strong>Documentação da Tarefa:</strong></h5>
-        <div class="markdown-body">
-            {{ tarefa.documentacao|render_markdown|safe }}
-        </div>
+        <div style="white-space: pre-wrap;" class="bg-light p-3 rounded">
+            {{ tarefa.documentacao|urlize|linebreaksbr }}
+        </div>        
         <hr>
         <h5>Comentários</h5>
 

@@ -4,9 +4,26 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 import secrets
 
+class Equipe(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True)
+    codigo_acesso = models.CharField(max_length=20, unique=True, blank=True)
+    criado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='equipes_criadas')
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_acesso:
+            self.codigo_acesso = secrets.token_hex(4)  # Ex: 'a3f92c1d'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nome
+    
 class Sistema(models.Model):
     nome = models.CharField(max_length=100)
-
+    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
+    data_mapeamento = models.DateField(null=True, blank=True)
+    base_dados = models.CharField(max_length=100, blank=True)
+    icone = models.ImageField(upload_to='icones_sistema/', null=True, blank=True)
     def __str__(self):
         return self.nome
 
@@ -14,6 +31,7 @@ class TipoTarefa(models.Model):
     nome = models.CharField(max_length=100)
     roteiro = models.TextField()
     titulo_padrao = models.CharField(max_length=200, blank=True)
+    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.nome
@@ -37,20 +55,6 @@ class Tarefa(models.Model):
 
     def __str__(self):
         return self.titulo
-
-class Equipe(models.Model):
-    nome = models.CharField(max_length=100)
-    descricao = models.TextField(blank=True)
-    codigo_acesso = models.CharField(max_length=20, unique=True, blank=True)
-    criado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='equipes_criadas')
-
-    def save(self, *args, **kwargs):
-        if not self.codigo_acesso:
-            self.codigo_acesso = secrets.token_hex(4)  # Ex: 'a3f92c1d'
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.nome
 
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

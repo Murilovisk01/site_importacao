@@ -14,10 +14,11 @@
             <div>
                 <a class="navbar-brand" href="{% url 'dashboard' %}">Sistema de Tarefas</a>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'criar_tipo' %}" class="btn btn-sm btn-outline-light me-2">+ Tipo</a>
-                    <a href="{% url 'criar_sistema' %}" class="btn btn-sm btn-outline-light me-2">+ Sistema</a>
+                    <a href="{% url 'listar_tipotarefa' %}" class="btn btn-sm btn-outline-light me-2">+ Tipo</a>
+                    <a href="{% url 'listar_sistemas' %}" class="btn btn-sm btn-outline-light me-2">+ Sistema</a>
                     {% if user.is_authenticated and user.perfil.is_gerente %}
                         <a href="{% url 'painel_equipe' %}" class="btn btn-sm btn-outline-light me-2">Painel da Equipe</a>
+                        <a href="{% url 'relatorio_equipe' %}" class="btn btn-sm btn-outline-light me-2">Relatorios</a>
                     {% endif %}
                 {% endif %}
             </div>

@@ -10,6 +10,8 @@ from .models import Tarefa, Sistema, TipoTarefa, Equipe, Perfil
 from .forms import ComentarioForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
+from django.db.models import Count
+from datetime import datetime
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -23,7 +25,11 @@ class CustomLoginView(LoginView):
             return redirect('login')
 
         login(self.request, user)
-        return redirect(self.get_success_url())
+        return redirect('dashboard') 
+
+def tela_inicial(request):
+    sistemas = Sistema.objects.all()
+    return render(request, 'core/tela_inicial.html', {'sistemas': sistemas})
 
 @login_required
 def dashboard_kanban(request):
@@ -33,7 +39,7 @@ def dashboard_kanban(request):
         messages.error(request, "Você ainda não está em uma equipe aprovada.")
         return redirect('logout')
 
-    equipe = perfil.equipe
+    equipe = request.user.perfil.equipe
     membro_id = request.GET.get('membro')
     busca = request.GET.get('q')
 
@@ -65,7 +71,9 @@ def criar_tipo_tarefa(request):
     if request.method == 'POST':
         form = TipoTarefaForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.equipe = request.user.perfil.equipe
+            obj.save()
             messages.success(request, 'Tipo de tarefa criado com sucesso.')
             return redirect('dashboard')
     else:
@@ -74,17 +82,60 @@ def criar_tipo_tarefa(request):
     return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Criar Tipo de Tarefa'})
 
 @login_required
-def criar_sistema(request):
+def listar_tipotarefas(request):
+    equipe = request.user.perfil.equipe
+    tipos = TipoTarefa.objects.filter(equipe=equipe)
+    return render(request, 'core/listar_tipotarefas.html', {'tipos': tipos})
+
+@login_required
+def editar_tipotarefa(request, tipo_id):
+    tipo = get_object_or_404(TipoTarefa, id=tipo_id, equipe=request.user.perfil.equipe)
+    
     if request.method == 'POST':
-        form = SistemaForm(request.POST)
+        form = TipoTarefaForm(request.POST, instance=tipo)
         if form.is_valid():
             form.save()
+            return redirect('listar_tipotarefa')
+    else:
+        form = TipoTarefaForm(instance=tipo)
+        
+    
+    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Tipo Tarefa'})
+
+@login_required
+def criar_sistema(request):
+    if request.method == 'POST':
+        form = SistemaForm(request.POST, request.FILES)
+        if form.is_valid():
+            sistema = form.save(commit=False)
+            sistema.equipe = request.user.perfil.equipe  # 👈 AQUI é o que faltava
+            sistema.save()
             messages.success(request, 'Sistema criado com sucesso.')
             return redirect('dashboard')
     else:
         form = SistemaForm()
 
     return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Criar Sistema'})
+
+@login_required
+def listar_sistemas(request):
+    equipe = request.user.perfil.equipe
+    sistemas = Sistema.objects.filter(equipe=equipe)
+    return render(request, 'core/listar_sistemas.html', {'sistemas': sistemas})
+
+@login_required
+def editar_sistema(request, sistema_id):
+    sistema = get_object_or_404(Sistema, id=sistema_id, equipe=request.user.perfil.equipe)
+    
+    if request.method == 'POST':
+        form = SistemaForm(request.POST, request.FILES, instance=sistema,)
+        if form.is_valid():
+            form.save()
+            return redirect('listar_sistemas')
+    else:
+        form = SistemaForm(instance=sistema)
+    
+    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Sistema'})
 
 @login_required
 def criar_tarefa(request):
@@ -106,9 +157,12 @@ def editar_tarefa(request, tarefa_id):
     # Apenas quem criou ou foi atribuído pode editar
     if request.user != tarefa.criado_por and request.user != tarefa.atribuido_para:
         return redirect('dashboard')
+    
+    if tarefa.criado_por.perfil.equipe != request.user.perfil.equipe:
+        return HttpResponseForbidden("Você não pode acessar essa tarefa.")
 
     if request.method == 'POST':
-        form = TarefaForm(request.POST, instance=tarefa)
+        form = TarefaForm(request.POST or None, instance=tarefa, user=request.user)
         if form.is_valid():
             form.save()
             return redirect('dashboard')
@@ -300,3 +354,44 @@ def remover_membro(request, perfil_id):
     messages.success(request, f"{nome_usuario} foi removido da equipe.")
     return redirect('painel_equipe')
 
+@login_required
+def relatorio_equipe(request):
+    equipe = request.user.perfil.equipe
+    tarefas = Tarefa.objects.filter(criado_por__perfil__equipe=equipe)
+
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+    tipo_id = request.GET.get('tipo')
+    status = request.GET.get('status')
+
+    if data_inicio:
+        tarefas = tarefas.filter(criado_em__date__gte=data_inicio)
+    if data_fim:
+        tarefas = tarefas.filter(criado_em__date__lte=data_fim)
+    if tipo_id:
+        tarefas = tarefas.filter(tipo_id=tipo_id)
+    if status:
+        tarefas = tarefas.filter(status=status)
+
+    total = tarefas.count()
+    concluidas = tarefas.filter(status='concluida').count()
+    andamento = tarefas.filter(status='andamento').count()
+    inicial = tarefas.filter(status='inicial').count()
+
+    tarefas_por_tipo = tarefas.values('tipo__nome').annotate(qtd=Count('id'))
+
+    context = {
+        'total': total,
+        'concluidas': concluidas,
+        'andamento': andamento,
+        'inicial': inicial,
+        'tarefas_por_tipo': list(tarefas_por_tipo),
+        'tipos': TipoTarefa.objects.filter(equipe=equipe),
+        'filtros': {
+            'data_inicio': data_inicio,
+            'data_fim': data_fim,
+            'tipo_id': tipo_id,
+            'status': status,
+        }
+    }
+    return render(request, 'core/relatorio_equipe.html', context)

@@ -1,6 +1,7 @@
 from django import forms
 from .models import Comentario, TipoTarefa, Sistema, Tarefa, Equipe
 from django.contrib.auth.models import User
+from django.forms.widgets import DateInput
 
 class TipoTarefaForm(forms.ModelForm):
     class Meta:
@@ -10,21 +11,34 @@ class TipoTarefaForm(forms.ModelForm):
 class SistemaForm(forms.ModelForm):
     class Meta:
         model = Sistema
-        fields = ['nome']
+        fields = ['nome', 'data_mapeamento', 'base_dados', 'icone']
+        widgets = {
+            'data_mapeamento': forms.DateInput(attrs={'type': 'date'}),
+        }
 
 class TarefaForm(forms.ModelForm):
     class Meta:
         model = Tarefa
         fields = ['titulo', 'tipo', 'sistema', 'atribuido_para', 'prazo', 'status', 'documentacao']
         widgets = {
-            'prazo': forms.DateInput(attrs={'type': 'date'}),
+            'prazo': DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'documentacao': forms.Textarea(attrs={'rows': 4}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if kwargs.get('instance'):
-            self.fields['tipo'].disabled = True
+def __init__(self, *args, **kwargs):
+    user = kwargs.pop('user', None)
+    super().__init__(*args, **kwargs)
+
+    if user:
+        equipe = user.perfil.equipe
+        self.fields['tipo'].queryset = TipoTarefa.objects.filter(equipe=equipe)
+        self.fields['sistema'].queryset = Sistema.objects.filter(equipe=equipe)
+        self.fields['atribuido_para'].queryset = User.objects.filter(perfil__equipe=equipe)
+
+    if kwargs.get('instance'):
+        self.fields['tipo'].disabled = True
+
+    self.fields['prazo'].input_formats = ['%Y-%m-%d']
 
 
 class RegistroForm(forms.ModelForm):

@@ -75,14 +75,16 @@
         {% endfor %}
     };
 
-    tipoSelect.addEventListener("change", function () {
-        const tipoId = this.value;
-        if (titulosPadrao[tipoId]) {
-            tituloInput.value = titulosPadrao[tipoId];
-        }
-        if (roteirosPadrao[tipoId] && !docInput.value) {
-            docInput.value = roteirosPadrao[tipoId];
-        }        
-    });
+    if (!tipoSelect.disabled) {
+        tipoSelect.addEventListener("change", function () {
+            const tipoId = this.value;
+            if (titulosPadrao[tipoId]) {
+                tituloInput.value = titulosPadrao[tipoId];
+            }
+            if (roteirosPadrao[tipoId]) {
+                docInput.value = roteirosPadrao[tipoId];
+            }               
+        });
+    }
 </script>
 {% endblock %}

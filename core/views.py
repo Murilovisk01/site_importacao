@@ -114,7 +114,12 @@ def editar_tarefa(request, tarefa_id):
             return redirect('dashboard')
     else:
         form = TarefaForm(instance=tarefa)
-    return render(request, 'core/form.html', {'form': form, 'titulo': f'Editar: {tarefa.titulo}'})
+        
+    return render(request, 'core/form.html', {
+    'form': form,
+    'titulo': f'Editar: {tarefa.titulo}',
+    'modo_edicao': True
+})
 
 @login_required
 def excluir_tarefa(request, tarefa_id):
@@ -158,7 +163,6 @@ def detalhes_tarefa(request, tarefa_id):
         'form': form,
         'comentarios': comentarios,
     })
-
 
 def registro_usuario(request):
     if request.method == 'POST':

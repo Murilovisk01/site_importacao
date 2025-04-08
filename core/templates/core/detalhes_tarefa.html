@@ -13,7 +13,7 @@
         <p><strong>Prazo:</strong> {{ tarefa.prazo }}</p>
         <p><strong>Criado por:</strong> {{ tarefa.criado_por }}</p>
         <p><strong>Atribuído para:</strong> {{ tarefa.atribuido_para }}</p>
-        <h5>Documentação da Tarefa</h5>
+        <h5><strong>Documentação da Tarefa:</strong></h5>
         <div class="markdown-body">
             {{ tarefa.documentacao|render_markdown|safe }}
         </div>

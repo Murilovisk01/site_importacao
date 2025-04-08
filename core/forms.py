@@ -21,6 +21,12 @@ class TarefaForm(forms.ModelForm):
             'documentacao': forms.Textarea(attrs={'rows': 4}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if kwargs.get('instance'):
+            self.fields['tipo'].disabled = True
+
+
 class RegistroForm(forms.ModelForm):
     senha = forms.CharField(widget=forms.PasswordInput)
     repetir_senha = forms.CharField(widget=forms.PasswordInput)

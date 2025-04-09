@@ -13,6 +13,7 @@ from django.db.models import Count
 from datetime import datetime
 from core.decorators import aprovado_required
 from django.forms import inlineformset_factory
+from django.db.models import Q
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -29,7 +30,12 @@ class CustomLoginView(LoginView):
         return redirect('dashboard') 
 
 def tela_inicial(request):
+    termo = request.GET.get('q', '')
     sistemas = Sistema.objects.all()
+
+    if termo:
+        sistemas = sistemas.filter(nome__icontains=termo)
+
     return render(request, 'core/tela_inicial.html', {'sistemas': sistemas})
 
 @login_required
@@ -212,6 +218,7 @@ def criar_sistema(request):
         form = SistemaForm(request.POST, request.FILES)
         if form.is_valid():
             sistema = form.save(commit=False)
+            sistema.criado_por = request.user
             sistema.save()
             messages.success(request, 'Sistema criado com sucesso.')
             return redirect('dashboard')

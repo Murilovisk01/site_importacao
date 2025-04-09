@@ -2,28 +2,13 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-import secrets
-
-class Equipe(models.Model):
-    nome = models.CharField(max_length=100)
-    descricao = models.TextField(blank=True)
-    codigo_acesso = models.CharField(max_length=20, unique=True, blank=True)
-    criado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='equipes_criadas')
-
-    def save(self, *args, **kwargs):
-        if not self.codigo_acesso:
-            self.codigo_acesso = secrets.token_hex(4)  # Ex: 'a3f92c1d'
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.nome
     
 class Sistema(models.Model):
     nome = models.CharField(max_length=100)
-    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
     data_mapeamento = models.DateField(null=True, blank=True)
     base_dados = models.CharField(max_length=100, blank=True)
     icone = models.ImageField(upload_to='icones_sistema/', null=True, blank=True)
+    criado_por = models.ForeignKey(User, related_name='sistemas_criados', on_delete=models.CASCADE)
     def __str__(self):
         return self.nome
 
@@ -31,11 +16,34 @@ class TipoTarefa(models.Model):
     nome = models.CharField(max_length=100)
     roteiro = models.TextField()
     titulo_padrao = models.CharField(max_length=200, blank=True)
-    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
-
+    criado_por = models.ForeignKey(User, related_name='tipos_criados', on_delete=models.CASCADE)
     def __str__(self):
         return self.nome
 
+class ChecklistSecao(models.Model):
+    tipo = models.ForeignKey('TipoTarefa', on_delete=models.CASCADE, related_name='secoes')
+    titulo = models.CharField(max_length=255)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordem']
+
+    def __str__(self):
+        return self.titulo
+
+class ChecklistItem(models.Model):
+    secao = models.ForeignKey('ChecklistSecao', on_delete=models.CASCADE, related_name='itens')
+    descricao = models.TextField()
+    obrigatorio = models.BooleanField(default=False)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordem']
+
+    def __str__(self):
+        return self.descricao
+
+    
 class Tarefa(models.Model):
     STATUS_CHOICES = [
         ('inicial', 'Inicial'),
@@ -46,7 +54,7 @@ class Tarefa(models.Model):
     titulo = models.CharField(max_length=200)
     tipo = models.ForeignKey(TipoTarefa, on_delete=models.CASCADE)
     sistema = models.ForeignKey(Sistema, on_delete=models.CASCADE)
-    criado_por = models.ForeignKey(User, related_name='criadas', on_delete=models.CASCADE)
+    criado_por = models.ForeignKey(User, related_name='tarefas_criadas', on_delete=models.CASCADE)
     atribuido_para = models.ForeignKey(User, related_name='atribuídas', on_delete=models.CASCADE)
     data_criacao = models.DateTimeField(auto_now_add=True)
     prazo = models.DateField()
@@ -58,7 +66,6 @@ class Tarefa(models.Model):
 
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    equipe = models.ForeignKey(Equipe, on_delete=models.SET_NULL, null=True, blank=True)
     is_gerente = models.BooleanField(default=False)
     aprovado = models.BooleanField(default=False)  # Se for True, o gerente já aceitou
 
@@ -76,10 +83,13 @@ class Comentario(models.Model):
 
     
 @receiver(post_save, sender=User)
-def criar_perfil_usuario(sender, instance, created, **kwargs):
+def criar_ou_atualizar_perfil(sender, instance, created, **kwargs):
     if created:
-        Perfil.objects.create(user=instance)
+        Perfil.objects.create(
+            user=instance,
+            aprovado=instance.is_superuser,
+            is_gerente=instance.is_superuser
+        )
+    else:
+        instance.perfil.save()
 
-@receiver(post_save, sender=User)
-def salvar_perfil_usuario(sender, instance, **kwargs):
-    instance.perfil.save()

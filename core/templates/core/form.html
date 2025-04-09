@@ -75,6 +75,12 @@
         {% endfor %}
     };
 
+    const checklistsPadrao = {
+        {% for tipo in form.fields.tipo.queryset %}
+            "{{ tipo.id }}": `{{ tipo.roteiro|escapejs }}`,
+        {% endfor %}
+    };
+
     if (!tipoSelect.disabled) {
         tipoSelect.addEventListener("change", function () {
             const tipoId = this.value;
@@ -83,7 +89,10 @@
             }
             if (roteirosPadrao[tipoId]) {
                 docInput.value = roteirosPadrao[tipoId];
-            }               
+            }
+            if (checklistsPadrao[tipoId]) {
+                docInput.value += "\n" + checklistsPadrao[tipoId];
+            }
         });
     }
 </script>

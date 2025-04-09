@@ -1,12 +1,28 @@
 from django import forms
-from .models import Comentario, TipoTarefa, Sistema, Tarefa, Equipe
+from .models import ChecklistItem, ChecklistSecao, Comentario, TipoTarefa, Sistema, Tarefa
 from django.contrib.auth.models import User
 from django.forms.widgets import DateInput
+from django.forms import inlineformset_factory
 
 class TipoTarefaForm(forms.ModelForm):
     class Meta:
         model = TipoTarefa
         fields = ['nome','titulo_padrao', 'roteiro']
+
+class ChecklistSecaoForm(forms.ModelForm):
+    class Meta:
+        model = ChecklistSecao
+        fields = ['titulo']
+
+ChecklistSecaoFormSet = inlineformset_factory(
+    TipoTarefa, ChecklistSecao, form=ChecklistSecaoForm,
+    extra=1, can_delete=True
+)
+
+ChecklistItemFormSet = inlineformset_factory(
+    ChecklistSecao, ChecklistItem,
+    fields=('descricao',), extra=1, can_delete=True
+)
 
 class SistemaForm(forms.ModelForm):
     class Meta:
@@ -17,58 +33,42 @@ class SistemaForm(forms.ModelForm):
         }
 
 class TarefaForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)  # Retira o argumento 'user'
+        super().__init__(*args, **kwargs)
+
+        self.fields['tipo'].queryset = TipoTarefa.objects.all()
+        self.fields['sistema'].queryset = Sistema.objects.all()
+        self.fields['atribuido_para'].queryset = User.objects.all()
+
+        if kwargs.get('instance'):
+            self.fields['tipo'].disabled = True
+        self.fields['prazo'].input_formats = ['%Y-%m-%d']
+
     class Meta:
         model = Tarefa
         fields = ['titulo', 'tipo', 'sistema', 'atribuido_para', 'prazo', 'status', 'documentacao']
         widgets = {
-            'prazo': DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'prazo': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'documentacao': forms.Textarea(attrs={'rows': 4}),
         }
 
-def __init__(self, *args, **kwargs):
-    user = kwargs.pop('user', None)
-    super().__init__(*args, **kwargs)
-
-    if user:
-        equipe = user.perfil.equipe
-        self.fields['tipo'].queryset = TipoTarefa.objects.filter(equipe=equipe)
-        self.fields['sistema'].queryset = Sistema.objects.filter(equipe=equipe)
-        self.fields['atribuido_para'].queryset = User.objects.filter(perfil__equipe=equipe)
-
-    if kwargs.get('instance'):
-        self.fields['tipo'].disabled = True
-
-    self.fields['prazo'].input_formats = ['%Y-%m-%d']
-
-
-class RegistroForm(forms.ModelForm):
-    senha = forms.CharField(widget=forms.PasswordInput)
-    repetir_senha = forms.CharField(widget=forms.PasswordInput)
-
-    # Opção: criar ou entrar em equipe
-    criar_nova_equipe = forms.BooleanField(
-        required=False,
-        label="Criar nova equipe?"
-    )
-
-    nome_equipe = forms.CharField(required=False)
-    descricao_equipe = forms.CharField(widget=forms.Textarea, required=False)
-    codigo_acesso = forms.CharField(required=False, label="Código da equipe")
-
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'senha', 'repetir_senha']
+class RegistroForm(forms.Form):
+    username = forms.CharField(label="Nome de usuário")
+    email = forms.EmailField(label="Email")
+    senha = forms.CharField(widget=forms.PasswordInput, label="Senha")
+    confirmar_senha = forms.CharField(widget=forms.PasswordInput, label="Confirmar Senha")
 
     def clean(self):
         cleaned_data = super().clean()
         senha = cleaned_data.get("senha")
-        repetir_senha = cleaned_data.get("repetir_senha")
+        confirmar = cleaned_data.get("confirmar_senha")
 
-        if senha != repetir_senha:
+        if senha and confirmar and senha != confirmar:
             raise forms.ValidationError("As senhas não coincidem.")
+
         return cleaned_data
     
-
 class ComentarioForm(forms.ModelForm):
     class Meta:
         model = Comentario

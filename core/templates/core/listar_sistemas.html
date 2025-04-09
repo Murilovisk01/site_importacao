@@ -20,7 +20,10 @@
         <tr>
             <td>{{ sistema.nome }}</td>
             <td class="text-end">
-                <a href="{% url 'editar_sistema' sistema.id %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                <a href="{% url 'editar_sistema' sistema.id %}" class="btn btn-sm btn-outline-info mt-2">Editar</a>
+                {%if user == sistema.criado_por%}
+                    <a href="{% url 'excluir_sistema' sistema.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
+                {%endif%}    
             </td>
         </tr>
         {% endfor %}

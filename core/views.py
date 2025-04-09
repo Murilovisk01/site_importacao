@@ -4,14 +4,15 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect,get_object_or_404
-from django.utils.dateparse import parse_date
 from django.http import HttpResponseForbidden
-from .models import Tarefa, Sistema, TipoTarefa, Equipe, Perfil
-from .forms import ComentarioForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
+from .models import ChecklistItem, ChecklistSecao, Tarefa, Sistema, TipoTarefa, Perfil
+from .forms import ChecklistItemFormSet, ChecklistSecaoForm, ChecklistSecaoFormSet, ComentarioForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
 from django.db.models import Count
 from datetime import datetime
+from core.decorators import aprovado_required
+from django.forms import inlineformset_factory
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -32,18 +33,19 @@ def tela_inicial(request):
     return render(request, 'core/tela_inicial.html', {'sistemas': sistemas})
 
 @login_required
+@aprovado_required
 def dashboard_kanban(request):
     perfil = request.user.perfil
 
-    if not perfil.aprovado or not perfil.equipe:
+    if not perfil.aprovado:
         messages.error(request, "Você ainda não está em uma equipe aprovada.")
         return redirect('logout')
 
-    equipe = request.user.perfil.equipe
+    
     membro_id = request.GET.get('membro')
     busca = request.GET.get('q')
 
-    tarefas = Tarefa.objects.filter(criado_por__perfil__equipe=equipe)
+    tarefas = Tarefa.objects.all()
 
     if membro_id:
         tarefas = tarefas.filter(atribuido_para__id=membro_id)
@@ -55,60 +57,161 @@ def dashboard_kanban(request):
     tarefas_andamento = tarefas.filter(status='andamento')
     tarefas_concluida = tarefas.filter(status='concluida')
 
-    membros = User.objects.filter(perfil__equipe=equipe, perfil__aprovado=True)
 
     return render(request, 'core/dashboard_kanban.html', {
         'tarefas_inicial': tarefas_inicial,
         'tarefas_andamento': tarefas_andamento,
         'tarefas_concluida': tarefas_concluida,
-        'membros': membros,
         'filtro_membro': int(membro_id) if membro_id else None,
         'busca': busca or '',
     })
 
+ChecklistSecaoFormSet = inlineformset_factory(
+    TipoTarefa, ChecklistSecao, form=ChecklistSecaoForm,
+    extra=1, can_delete=True
+)
+
 @login_required
+@aprovado_required
 def criar_tipo_tarefa(request):
     if request.method == 'POST':
         form = TipoTarefaForm(request.POST)
-        if form.is_valid():
-            obj = form.save(commit=False)
-            obj.equipe = request.user.perfil.equipe
-            obj.save()
-            messages.success(request, 'Tipo de tarefa criado com sucesso.')
-            return redirect('dashboard')
+        formset_secoes = ChecklistSecaoFormSet(request.POST, prefix='secoes')
+
+        # Criar os item_formsets com instância vazia (temporária)
+        item_formsets = [
+            ChecklistItemFormSet(request.POST, prefix=f'itens-{i}')
+            for i in range(len(formset_secoes.forms))
+        ]
+
+        if form.is_valid() and formset_secoes.is_valid() and all([ifs.is_valid() for ifs in item_formsets]):
+            tipo = form.save(commit=False)
+            tipo.criado_por = request.user
+            tipo.save()
+
+            secoes = formset_secoes.save(commit=False)
+
+            for i, secao_form in enumerate(formset_secoes.forms):
+                secao = secao_form.save(commit=False)
+                secao.tipo = tipo
+                secao.save()
+
+                item_formset = item_formsets[i]
+                items = item_formset.save(commit=False)
+                for item in items:
+                    item.secao = secao
+                    item.save()
+
+            messages.success(request, "Tipo de tarefa com checklist criado com sucesso.")
+            return redirect('listar_tipotarefa')
+        else:
+            messages.error(request, "Erro ao criar tipo de tarefa. Verifique os campos.")
+
     else:
         form = TipoTarefaForm()
+        formset_secoes = ChecklistSecaoFormSet(prefix='secoes')
+        item_formsets = [ChecklistItemFormSet(prefix=f'itens-{i}') for i in range(len(formset_secoes.forms))]
 
-    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Criar Tipo de Tarefa'})
+    return render(request, 'core/form_tipo_checklist.html', {
+        'form': form,
+        'formset_secoes': formset_secoes,
+        'item_formsets': item_formsets,
+        'titulo': 'Criar Tipo de Tarefa com Checklist'
+    })
 
 @login_required
+@aprovado_required
 def listar_tipotarefas(request):
-    equipe = request.user.perfil.equipe
-    tipos = TipoTarefa.objects.filter(equipe=equipe)
+    tipos = TipoTarefa.objects.all()
     return render(request, 'core/listar_tipotarefas.html', {'tipos': tipos})
 
 @login_required
-def editar_tipotarefa(request, tipo_id):
-    tipo = get_object_or_404(TipoTarefa, id=tipo_id, equipe=request.user.perfil.equipe)
-    
+@aprovado_required
+def editar_tipo_tarefa(request, tipo_id):
+    tipo = get_object_or_404(TipoTarefa, id=tipo_id)
+
+    ChecklistSecaoFormSet = inlineformset_factory(
+        TipoTarefa, ChecklistSecao, form=ChecklistSecaoForm, extra=0, can_delete=True
+    )
+
+    ChecklistItemFormSet = inlineformset_factory(
+        ChecklistSecao, ChecklistItem, fields=('descricao', 'obrigatorio'), extra=0, can_delete=True
+    )
+
     if request.method == 'POST':
         form = TipoTarefaForm(request.POST, instance=tipo)
-        if form.is_valid():
-            form.save()
+        formset_secoes = ChecklistSecaoFormSet(request.POST, instance=tipo)
+
+        item_formsets = []
+        all_valid = form.is_valid() and formset_secoes.is_valid()
+
+        for i, secao_form in enumerate(formset_secoes.forms):
+            prefix = f'item_formset_{i}'
+            secao_instance = secao_form.instance
+            item_formset = ChecklistItemFormSet(
+                request.POST,
+                instance=secao_instance,
+                prefix=prefix
+            )
+            item_formsets.append(item_formset)
+            all_valid = all_valid and item_formset.is_valid()
+
+        if all_valid:
+            tipo = form.save()
+            secoes = formset_secoes.save(commit=False)
+
+            for i, secao in enumerate(secoes):
+                secao.tipo = tipo
+                secao.save()
+
+                item_formsets[i].instance = secao
+                item_formsets[i].save()
+
+            # Também remover seções marcadas para delete
+            for secao_form in formset_secoes.deleted_forms:
+                secao_form.instance.delete()
+
+            messages.success(request, "Tipo de tarefa atualizado com sucesso.")
             return redirect('listar_tipotarefa')
     else:
         form = TipoTarefaForm(instance=tipo)
-        
-    
-    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Tipo Tarefa'})
+        formset_secoes = ChecklistSecaoFormSet(instance=tipo)
+        item_formsets = []
+
+        for i, secao in enumerate(formset_secoes.forms):
+            prefix = f'item_formset_{i}'
+            secao_instance = secao.instance
+            item_formset = ChecklistItemFormSet(instance=secao_instance, prefix=prefix)
+            item_formsets.append(item_formset)
+
+    return render(request, 'core/form_tipo_checklist.html', {
+        'form': form,
+        'formset_secoes': formset_secoes,
+        'item_formsets': item_formsets,
+        'titulo': 'Editar Tipo de Tarefa'
+    })
 
 @login_required
+@aprovado_required
+def excluir_tipo_tarefa(request, tipo_id):
+    tipo = get_object_or_404(TipoTarefa, id=tipo_id)
+
+    if request.user != tipo.criado_por:
+        return redirect('listar_tipotarefa')
+    
+    if request.method == 'POST':
+        tipo.delete()
+        return redirect('listar_tipotarefa')
+    
+    return render(request, 'core/confirmar_exclusao.html', {'tipo':tipo})
+
+@login_required
+@aprovado_required
 def criar_sistema(request):
     if request.method == 'POST':
         form = SistemaForm(request.POST, request.FILES)
         if form.is_valid():
             sistema = form.save(commit=False)
-            sistema.equipe = request.user.perfil.equipe  # 👈 AQUI é o que faltava
             sistema.save()
             messages.success(request, 'Sistema criado com sucesso.')
             return redirect('dashboard')
@@ -118,14 +221,16 @@ def criar_sistema(request):
     return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Criar Sistema'})
 
 @login_required
+@aprovado_required
 def listar_sistemas(request):
-    equipe = request.user.perfil.equipe
-    sistemas = Sistema.objects.filter(equipe=equipe)
+
+    sistemas = Sistema.objects.all()
     return render(request, 'core/listar_sistemas.html', {'sistemas': sistemas})
 
 @login_required
+@aprovado_required
 def editar_sistema(request, sistema_id):
-    sistema = get_object_or_404(Sistema, id=sistema_id, equipe=request.user.perfil.equipe)
+    sistema = get_object_or_404(Sistema, id=sistema_id)
     
     if request.method == 'POST':
         form = SistemaForm(request.POST, request.FILES, instance=sistema,)
@@ -138,6 +243,21 @@ def editar_sistema(request, sistema_id):
     return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Sistema'})
 
 @login_required
+@aprovado_required
+def excluir_sistema(request,sistema_id):
+    sistema = get_object_or_404(Sistema, id=sistema_id)
+
+    if request.user != sistema.criado_por:
+        return redirect('listar_sistemas')
+    
+    if request.method == 'POST':
+        sistema.delete()
+        return redirect('listar_sistemas')
+    
+    return render(request,'core/confirmar_exclusao.html',{'sistema':sistema})
+
+@login_required
+@aprovado_required
 def criar_tarefa(request):
     if request.method == 'POST':
         form = TarefaForm(request.POST)
@@ -151,15 +271,13 @@ def criar_tarefa(request):
     return render(request, 'core/form.html', {'form': form, 'titulo': 'Criar Tarefa'})
 
 @login_required
+@aprovado_required
 def editar_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
     # Apenas quem criou ou foi atribuído pode editar
     if request.user != tarefa.criado_por and request.user != tarefa.atribuido_para:
         return redirect('dashboard')
-    
-    if tarefa.criado_por.perfil.equipe != request.user.perfil.equipe:
-        return HttpResponseForbidden("Você não pode acessar essa tarefa.")
 
     if request.method == 'POST':
         form = TarefaForm(request.POST or None, instance=tarefa, user=request.user)
@@ -176,6 +294,7 @@ def editar_tarefa(request, tarefa_id):
 })
 
 @login_required
+@aprovado_required
 def excluir_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
@@ -190,11 +309,9 @@ def excluir_tarefa(request, tarefa_id):
     return render(request, 'core/confirmar_exclusao.html', {'tarefa': tarefa})
 
 @login_required
+@aprovado_required
 def detalhes_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
-
-    if not request.user.perfil.equipe == tarefa.criado_por.perfil.equipe:
-        return HttpResponseForbidden("Você não pode ver essa tarefa.")
 
     if request.method == 'POST':
         form = ComentarioForm(request.POST)
@@ -222,79 +339,56 @@ def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            senha = form.cleaned_data['senha']
-            user.set_password(senha)
-            user.save()
+            username = form.cleaned_data['username']
 
-            perfil = user.perfil  # é criado automaticamente via sinal
+            # Verifica se o nome de usuário já está em uso
+            if User.objects.filter(username=username).exists():
+                form.add_error('username', 'Este nome de usuário já está em uso.')
+                return render(request, 'core/registro.html', {'form': form})
 
-            if form.cleaned_data['criar_nova_equipe']:
-                # Criando nova equipe
-                nome_equipe = form.cleaned_data['nome_equipe']
-                descricao = form.cleaned_data['descricao_equipe']
-                codigo = form.cleaned_data['codigo_acesso']
-
-                if Equipe.objects.filter(codigo_acesso=codigo).exists():
-                    form.add_error('codigo_acesso', 'Este código de acesso já está em uso.')
-                    return render(request, 'core/registro.html', {'form': form})
-
-                equipe = Equipe.objects.create(
-                    nome=nome_equipe,
-                    descricao=descricao,
-                    codigo_acesso=codigo,
-                    criado_por=user
+            try:
+                user = User.objects.create_user(
+                    username=username,
+                    email=form.cleaned_data['email'],
+                    password=form.cleaned_data['senha']
                 )
-                perfil.equipe = equipe
-                perfil.is_gerente = True
-                perfil.aprovado = True
+                user.save()
+                perfil = user.perfil  # Criado automaticamente via signal
+                perfil.aprovado = False
                 perfil.save()
-            else:
-                # Entrando em equipe existente
-                codigo = form.cleaned_data['codigo_acesso']
-                try:
-                    equipe = Equipe.objects.get(codigo_acesso=codigo)
-                    perfil.equipe = equipe
-                    perfil.aprovado = False
-                    perfil.save()
-                    messages.info(request, "Cadastro realizado! Aguarde a aprovação da equipe.")
-                    return redirect('login')  # redireciona sem fazer login
-                except Equipe.DoesNotExist:
-                    form.add_error('codigo_acesso', 'Código de equipe inválido.')
-                    return render(request, 'core/registro.html', {'form': form})
-                
-            login(request, user)  # faz login automático após registro
-            return redirect('dashboard')
+
+                messages.info(request, 'Cadastro realizado! Aguarde a aprovação do administrador.')
+                return redirect('login')
+
+            except Exception as e:
+                messages.error(request, f'Erro ao registrar: {str(e)}')
     else:
         form = RegistroForm()
     return render(request, 'core/registro.html', {'form': form})
 
 @login_required
+@aprovado_required
 def painel_equipe(request):
     perfil = request.user.perfil
 
-    if not perfil.equipe or not perfil.is_gerente:
+    if not perfil.is_gerente:
         return HttpResponseForbidden("Apenas gerentes podem acessar o painel da equipe.")
 
-    equipe = perfil.equipe
-    membros = Perfil.objects.filter(equipe=equipe).exclude(user=request.user)
+    membros = Perfil.objects.exclude(user=request.user)
 
     return render(request, 'core/painel_equipe.html', {
-        'equipe': equipe,
         'membros': membros
     })
 
 @login_required
+@aprovado_required
 def aprovar_membro(request, perfil_id):
     gerente = request.user.perfil
 
-    if not gerente.is_gerente or not gerente.equipe:
+    if not gerente.is_gerente:
         return HttpResponseForbidden("Apenas gerentes podem aprovar membros.")
 
     perfil = get_object_or_404(Perfil, id=perfil_id)
-
-    if perfil.equipe != gerente.equipe:
-        return HttpResponseForbidden("Você só pode aprovar membros da sua equipe.")
 
     perfil.aprovado = True
     perfil.save()
@@ -303,18 +397,15 @@ def aprovar_membro(request, perfil_id):
     return redirect('painel_equipe')
 
 @login_required
+@aprovado_required
 def toggle_gerente(request, perfil_id):
     gerente = request.user.perfil
 
-    if not gerente.is_gerente or not gerente.equipe:
+    if not gerente.is_gerente:
         return HttpResponseForbidden("Apenas gerentes podem alterar cargos.")
 
     perfil = get_object_or_404(Perfil, id=perfil_id)
 
-    if perfil.equipe != gerente.equipe:
-        return HttpResponseForbidden("Este usuário não faz parte da sua equipe.")
-
-    # impede o gerente de se remover sozinho
     if perfil.user == request.user:
         messages.error(request, "Você não pode alterar seu próprio cargo.")
         return redirect('painel_equipe')
@@ -326,38 +417,37 @@ def toggle_gerente(request, perfil_id):
         messages.success(request, f"{perfil.user.username} agora é gerente.")
     else:
         messages.success(request, f"{perfil.user.username} foi rebaixado para membro.")
-    
+
     return redirect('painel_equipe')
 
+
 @login_required
+@aprovado_required
 def remover_membro(request, perfil_id):
     gerente = request.user.perfil
 
-    if not gerente.is_gerente or not gerente.equipe:
+    if not gerente.is_gerente:
         return HttpResponseForbidden("Apenas gerentes podem remover membros.")
 
     perfil = get_object_or_404(Perfil, id=perfil_id)
 
-    if perfil.equipe != gerente.equipe:
-        return HttpResponseForbidden("Este usuário não faz parte da sua equipe.")
-
     if perfil.user == request.user:
-        messages.error(request, "Você não pode se remover da equipe.")
+        messages.error(request, "Você não pode se remover.")
         return redirect('painel_equipe')
 
     nome_usuario = perfil.user.username
-    perfil.equipe = None
+
     perfil.aprovado = False
     perfil.is_gerente = False
     perfil.save()
 
-    messages.success(request, f"{nome_usuario} foi removido da equipe.")
+    messages.success(request, f"{nome_usuario} foi desativado.")
     return redirect('painel_equipe')
 
 @login_required
+@aprovado_required
 def relatorio_equipe(request):
-    equipe = request.user.perfil.equipe
-    tarefas = Tarefa.objects.filter(criado_por__perfil__equipe=equipe)
+    tarefas = Tarefa.objects.all()
 
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
@@ -386,7 +476,7 @@ def relatorio_equipe(request):
         'andamento': andamento,
         'inicial': inicial,
         'tarefas_por_tipo': list(tarefas_por_tipo),
-        'tipos': TipoTarefa.objects.filter(equipe=equipe),
+        'tipos': TipoTarefa.objects.all(),
         'filtros': {
             'data_inicio': data_inicio,
             'data_fim': data_fim,

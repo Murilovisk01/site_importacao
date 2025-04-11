@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, aprovar_membro, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, listar_sistemas, listar_tipotarefas, minha_conta, mover_tarefa, painel_equipe, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, aprovar_membro, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, listar_implantador, listar_sistemas, listar_tipotarefas, minha_conta, mover_tarefa, painel_equipe, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -35,4 +35,9 @@ urlpatterns = [
     path('relatorio/', relatorio_equipe, name='relatorio_equipe'),
     path('minha-conta/', minha_conta, name='minha_conta'),
     
+    path('criar-implantador/', criar_implantador, name='criar_implantador'),
+    path('implantadores/', listar_implantador, name='listar_implantador'),
+    path('implantador-editar/<int:implantador_id>/', editar_implatador, name='editar_implatador'),
+    path('excluir-implantador/<int:implantador_id>/',excluir_implantador,name='excluir_implantador'),
+
 ]

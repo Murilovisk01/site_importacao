@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden
-from .models import Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import  ComentarioForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
+from .models import Implatacao, Tarefa, Sistema, TipoTarefa, Perfil
+from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
 from django.db.models import Count
@@ -261,7 +261,6 @@ def detalhes_tarefa(request, tarefa_id):
         'comentarios': comentarios,
     })
 
-
 @login_required
 @aprovado_required
 def mover_tarefa(request, tarefa_id, novo_status):
@@ -459,3 +458,55 @@ def relatorio_equipe(request):
         }
     }
     return render(request, 'core/relatorio_equipe.html', context)
+
+@login_required
+@aprovado_required
+def criar_implantador(request):
+    if request.method == 'POST':
+        form = ImplantacaoForm(request.POST, request.FILES)
+        if form.is_valid():
+            implantador = form.save(commit=False)
+            implantador.criado_por = request.user
+            implantador.save()
+            messages.success(request, 'Implantador criado com sucesso.')
+            return redirect('listar_implantador')
+    else:
+        form = ImplantacaoForm()
+
+    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Criar Implantador'})
+
+@login_required
+@aprovado_required
+def listar_implantador(request):
+
+    implantadores = Implatacao.objects.all()
+    return render(request, 'core/listar_implantador.html', {'implantadores': implantadores})
+
+@login_required
+@aprovado_required
+def editar_implatador(request, implantador_id):
+    implantador = get_object_or_404(Implatacao, id=implantador_id)
+    
+    if request.method == 'POST':
+        form = ImplantacaoForm(request.POST, request.FILES, instance=implantador,)
+        if form.is_valid():
+            form.save()
+            return redirect('listar_implantador')
+    else:
+        form = ImplantacaoForm(instance=implantador)
+    
+    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Implantador'})
+
+@login_required
+@aprovado_required
+def excluir_implantador(request,implantador_id):
+    implantador = get_object_or_404(Implatacao, id=implantador_id)
+
+    if request.user != implantador.criado_por:
+        return redirect('listar_implantador')
+    
+    if request.method == 'POST':
+        implantador.delete()
+        return redirect('listar_implantador')
+    
+    return render(request,'core/confirmar_exclusao.html',{'implantador':implantador})

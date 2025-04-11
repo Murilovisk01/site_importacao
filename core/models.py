@@ -29,6 +29,9 @@ class Implatacao(models.Model):
     ]
     nome = models.CharField(max_length=100)
     cargo = models.CharField(max_length=20, choices=STATUS_CHOICES_IMPLATACAO, default='implantador')
+    criado_por = models.ForeignKey(User, related_name='implatador_criados', on_delete=models.CASCADE)
+    def __str__(self):
+        return self.nome
     
 class Tarefa(models.Model):
     STATUS_CHOICES = [
@@ -71,8 +74,7 @@ class Comentario(models.Model):
 
     def __str__(self):
         return f'{self.autor.username} - {self.criado_em.strftime("%d/%m/%Y %H:%M")}'
-
-    
+  
 @receiver(post_save, sender=User)
 def criar_ou_atualizar_perfil(sender, instance, created, **kwargs):
     if created:

@@ -118,3 +118,7 @@ class MinhaContaForm(forms.ModelForm):
 
         return cleaned_data
 
+class ImplantacaoForm(forms.ModelForm):
+    class Meta:
+        model = Implatacao
+        fields = ['nome', 'cargo']

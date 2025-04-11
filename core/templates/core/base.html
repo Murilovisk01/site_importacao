@@ -24,6 +24,7 @@
             <a href="{% url 'listar_sistemas' %}" class="btn btn-sm btn-outline-light me-2">Sistemas</a>
             {% if user.perfil.is_gerente %}
               <a href="{% url 'listar_tipotarefa' %}" class="btn btn-sm btn-outline-light me-2">Tipo de Tarefas</a>
+              <a href="{% url 'listar_implantador' %}" class="btn btn-sm btn-outline-light me-2">Implantação</a>
               <a href="{% url 'painel_equipe' %}" class="btn btn-sm btn-outline-light me-2">Painel da Equipe</a>
               <a href="{% url 'relatorio_equipe' %}" class="btn btn-sm btn-outline-light me-2">Relatórios</a>
             {% endif %}

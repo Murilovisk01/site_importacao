@@ -35,11 +35,11 @@ ALLOWED_HOSTS = [
     os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
     'site-importacao.onrender.com', 
     '*',
-    'web-production-4369.up.railway.app'
+    'importacao.up.railway.app'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://web-production-4369.up.railway.app',
+    'https://importacao.up.railway.app',
 ]
 
 # Application definition

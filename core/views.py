@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden
-from .models import ChecklistItem, ChecklistSecao, Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import ChecklistItemFormSet, ChecklistSecaoForm, ChecklistSecaoFormSet, ComentarioForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
+from .models import Tarefa, Sistema, TipoTarefa, Perfil
+from .forms import  ComentarioForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
 from django.db.models import Count
@@ -72,57 +72,23 @@ def dashboard_kanban(request):
         'busca': busca or '',
     })
 
-ChecklistSecaoFormSet = inlineformset_factory(
-    TipoTarefa, ChecklistSecao, form=ChecklistSecaoForm,
-    extra=1, can_delete=True
-)
-
 @login_required
 @aprovado_required
 def criar_tipo_tarefa(request):
     if request.method == 'POST':
         form = TipoTarefaForm(request.POST)
-        formset_secoes = ChecklistSecaoFormSet(request.POST, prefix='secoes')
-
-        # Criar os item_formsets com instância vazia (temporária)
-        item_formsets = [
-            ChecklistItemFormSet(request.POST, prefix=f'itens-{i}')
-            for i in range(len(formset_secoes.forms))
-        ]
-
-        if form.is_valid() and formset_secoes.is_valid() and all([ifs.is_valid() for ifs in item_formsets]):
+        if form.is_valid():
             tipo = form.save(commit=False)
             tipo.criado_por = request.user
             tipo.save()
-
-            secoes = formset_secoes.save(commit=False)
-
-            for i, secao_form in enumerate(formset_secoes.forms):
-                secao = secao_form.save(commit=False)
-                secao.tipo = tipo
-                secao.save()
-
-                item_formset = item_formsets[i]
-                items = item_formset.save(commit=False)
-                for item in items:
-                    item.secao = secao
-                    item.save()
-
-            messages.success(request, "Tipo de tarefa com checklist criado com sucesso.")
+            messages.success(request, "Tipo de tarefa criado com sucesso.")
             return redirect('listar_tipotarefa')
-        else:
-            messages.error(request, "Erro ao criar tipo de tarefa. Verifique os campos.")
-
     else:
         form = TipoTarefaForm()
-        formset_secoes = ChecklistSecaoFormSet(prefix='secoes')
-        item_formsets = [ChecklistItemFormSet(prefix=f'itens-{i}') for i in range(len(formset_secoes.forms))]
 
-    return render(request, 'core/form_tipo_checklist.html', {
+    return render(request, 'core/form.html', {
         'form': form,
-        'formset_secoes': formset_secoes,
-        'item_formsets': item_formsets,
-        'titulo': 'Criar Tipo de Tarefa com Checklist'
+        'titulo': 'Criar Tipo de Tarefa'
     })
 
 @login_required
@@ -136,64 +102,17 @@ def listar_tipotarefas(request):
 def editar_tipo_tarefa(request, tipo_id):
     tipo = get_object_or_404(TipoTarefa, id=tipo_id)
 
-    ChecklistSecaoFormSet = inlineformset_factory(
-        TipoTarefa, ChecklistSecao, form=ChecklistSecaoForm, extra=0, can_delete=True
-    )
-
-    ChecklistItemFormSet = inlineformset_factory(
-        ChecklistSecao, ChecklistItem, fields=('descricao', 'obrigatorio'), extra=0, can_delete=True
-    )
-
     if request.method == 'POST':
         form = TipoTarefaForm(request.POST, instance=tipo)
-        formset_secoes = ChecklistSecaoFormSet(request.POST, instance=tipo)
-
-        item_formsets = []
-        all_valid = form.is_valid() and formset_secoes.is_valid()
-
-        for i, secao_form in enumerate(formset_secoes.forms):
-            prefix = f'item_formset_{i}'
-            secao_instance = secao_form.instance
-            item_formset = ChecklistItemFormSet(
-                request.POST,
-                instance=secao_instance,
-                prefix=prefix
-            )
-            item_formsets.append(item_formset)
-            all_valid = all_valid and item_formset.is_valid()
-
-        if all_valid:
-            tipo = form.save()
-            secoes = formset_secoes.save(commit=False)
-
-            for i, secao in enumerate(secoes):
-                secao.tipo = tipo
-                secao.save()
-
-                item_formsets[i].instance = secao
-                item_formsets[i].save()
-
-            # Também remover seções marcadas para delete
-            for secao_form in formset_secoes.deleted_forms:
-                secao_form.instance.delete()
-
-            messages.success(request, "Tipo de tarefa atualizado com sucesso.")
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Tipo de tarefa atualizado com sucesso.')
             return redirect('listar_tipotarefa')
     else:
         form = TipoTarefaForm(instance=tipo)
-        formset_secoes = ChecklistSecaoFormSet(instance=tipo)
-        item_formsets = []
 
-        for i, secao in enumerate(formset_secoes.forms):
-            prefix = f'item_formset_{i}'
-            secao_instance = secao.instance
-            item_formset = ChecklistItemFormSet(instance=secao_instance, prefix=prefix)
-            item_formsets.append(item_formset)
-
-    return render(request, 'core/form_tipo_checklist.html', {
+    return render(request, 'core/form.html', {
         'form': form,
-        'formset_secoes': formset_secoes,
-        'item_formsets': item_formsets,
         'titulo': 'Editar Tipo de Tarefa'
     })
 

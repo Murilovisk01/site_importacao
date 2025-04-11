@@ -1,5 +1,5 @@
 from django import forms
-from .models import ChecklistItem, ChecklistSecao, Comentario, TipoTarefa, Sistema, Tarefa
+from .models import Comentario, TipoTarefa, Sistema, Tarefa
 from django.contrib.auth.models import User
 from django.forms.widgets import DateInput
 from django.forms import inlineformset_factory
@@ -9,20 +9,6 @@ class TipoTarefaForm(forms.ModelForm):
         model = TipoTarefa
         fields = ['nome','titulo_padrao', 'roteiro']
 
-class ChecklistSecaoForm(forms.ModelForm):
-    class Meta:
-        model = ChecklistSecao
-        fields = ['titulo']
-
-ChecklistSecaoFormSet = inlineformset_factory(
-    TipoTarefa, ChecklistSecao, form=ChecklistSecaoForm,
-    extra=1, can_delete=True
-)
-
-ChecklistItemFormSet = inlineformset_factory(
-    ChecklistSecao, ChecklistItem,
-    fields=('descricao',), extra=1, can_delete=True
-)
 
 class SistemaForm(forms.ModelForm):
     class Meta:

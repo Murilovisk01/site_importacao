@@ -20,29 +20,6 @@ class TipoTarefa(models.Model):
     def __str__(self):
         return self.nome
 
-class ChecklistSecao(models.Model):
-    tipo = models.ForeignKey('TipoTarefa', on_delete=models.CASCADE, related_name='secoes')
-    titulo = models.CharField(max_length=255)
-    ordem = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ['ordem']
-
-    def __str__(self):
-        return self.titulo
-
-class ChecklistItem(models.Model):
-    secao = models.ForeignKey('ChecklistSecao', on_delete=models.CASCADE, related_name='itens')
-    descricao = models.TextField()
-    obrigatorio = models.BooleanField(default=False)
-    ordem = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ['ordem']
-
-    def __str__(self):
-        return self.descricao
-
     
 class Tarefa(models.Model):
     STATUS_CHOICES = [

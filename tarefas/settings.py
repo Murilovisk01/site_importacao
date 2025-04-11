@@ -34,9 +34,13 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
     'site-importacao.onrender.com', 
-    '*'
+    '*',
+    'web-production-4369.up.railway.app'
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://web-production-4369.up.railway.app',
+]
 
 # Application definition
 
@@ -123,9 +127,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -135,6 +137,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'tela_inicial'
+
+
 
 # Tenta importar configurações locais, se existirem
 try:

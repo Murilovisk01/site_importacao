@@ -1,12 +1,12 @@
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login,update_session_auth_hash
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden
 from .models import Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import  ComentarioForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
+from .forms import  ComentarioForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
 from django.db.models import Count
@@ -140,7 +140,7 @@ def criar_sistema(request):
             sistema.criado_por = request.user
             sistema.save()
             messages.success(request, 'Sistema criado com sucesso.')
-            return redirect('dashboard')
+            return redirect('listar_sistemas')
     else:
         form = SistemaForm()
 
@@ -261,6 +261,30 @@ def detalhes_tarefa(request, tarefa_id):
         'comentarios': comentarios,
     })
 
+
+@login_required
+@aprovado_required
+def mover_tarefa(request, tarefa_id, novo_status):
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+
+    # Verifica se o usuário é o criador, o responsável OU é gerente
+    if (
+        request.user != tarefa.criado_por
+        and request.user != tarefa.atribuido_para
+        and not hasattr(request.user, 'perfil')
+        or not request.user.perfil.is_gerente
+    ):
+        messages.error(request, "Você não tem permissão para mover essa tarefa.")
+        return redirect('dashboard')
+
+    # Verifica se o status é válido
+    if novo_status in ['inicial', 'andamento', 'concluida']:
+        tarefa.status = novo_status
+        tarefa.save()
+        messages.success(request, f"Tarefa movida para: {tarefa.get_status_display()}")
+
+    return redirect('dashboard')
+
 def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
@@ -291,6 +315,31 @@ def registro_usuario(request):
     else:
         form = RegistroForm()
     return render(request, 'core/registro.html', {'form': form})
+
+@login_required
+def minha_conta(request):
+    user = request.user
+
+    if request.method == 'POST':
+        form = MinhaContaForm(request.POST, instance=user)
+
+        if form.is_valid():
+            user = form.save(commit=False)
+
+            senha1 = form.cleaned_data.get("password1")
+            senha2 = form.cleaned_data.get("password2")
+
+            if senha1 and senha2 and senha1 == senha2:
+                user.set_password(senha1)
+                update_session_auth_hash(request, user)
+
+            user.save()
+            messages.success(request, "Dados atualizados com sucesso.")
+            return redirect('dashboard')
+    else:
+        form = MinhaContaForm(instance=user)
+
+    return render(request, 'core/minha_conta.html', {'form': form})
 
 @login_required
 @aprovado_required
@@ -345,7 +394,6 @@ def toggle_gerente(request, perfil_id):
         messages.success(request, f"{perfil.user.username} foi rebaixado para membro.")
 
     return redirect('painel_equipe')
-
 
 @login_required
 @aprovado_required

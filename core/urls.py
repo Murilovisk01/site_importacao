@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, aprovar_membro, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, listar_sistemas, listar_tipotarefas, painel_equipe, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, aprovar_membro, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, listar_sistemas, listar_tipotarefas, minha_conta, mover_tarefa, painel_equipe, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -24,6 +24,7 @@ urlpatterns = [
     path('editar-tarefa/<int:tarefa_id>/', editar_tarefa, name='editar_tarefa'),
     path('excluir-tarefa/<int:tarefa_id>/', excluir_tarefa, name='excluir_tarefa'),
     path('tarefa/<int:tarefa_id>/', detalhes_tarefa, name='detalhes_tarefa'),
+    path('mover-tarefa/<int:tarefa_id>/<str:novo_status>/', mover_tarefa, name='mover_tarefa'),
 
     path('registro/', registro_usuario, name='registro'),
     path('equipe/', painel_equipe, name='painel_equipe'),
@@ -32,6 +33,6 @@ urlpatterns = [
     path('equipe/remover/<int:perfil_id>/', remover_membro, name='remover_membro'),
 
     path('relatorio/', relatorio_equipe, name='relatorio_equipe'),
+    path('minha-conta/', minha_conta, name='minha_conta'),
     
-
 ]

@@ -44,6 +44,16 @@
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
                     <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
                     <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
+                    
+                    {% if tarefa.status != 'inicial' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>
+                    {% endif %}
+                    {% if tarefa.status != 'andamento' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>
+                    {% endif %}
+                    {% if tarefa.status != 'concluida' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>
+                    {% endif %}
 
                     {% if user == tarefa.criado_por %}
                         <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
@@ -67,6 +77,15 @@
                     <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
                     <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
 
+                    {% if tarefa.status != 'inicial' %}
+                    <a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>
+                    {% endif %}
+                    {% if tarefa.status != 'andamento' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>
+                    {% endif %}
+                    {% if tarefa.status != 'concluida' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>
+                    {% endif %}
                     {% if user == tarefa.criado_por %}
                         <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
                     {% endif %}
@@ -87,7 +106,16 @@
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
                     <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
                     <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
-
+                    {% if tarefa.status != 'inicial' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>
+                    {% endif %}
+                    {% if tarefa.status != 'andamento' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>
+                    {% endif %}
+                    {% if tarefa.status != 'concluida' %}
+                        <a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>
+                    {% endif %}
+                    
                     {% if user == tarefa.criado_por %}
                         <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
                     {% endif %}

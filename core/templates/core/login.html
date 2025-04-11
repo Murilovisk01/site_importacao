@@ -1,11 +1,14 @@
 {% extends 'core/base.html' %}
 {% load form_filters %}
 {% block title %}Login{% endblock %}
+{% load static %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-4">
         <div class="card shadow p-4">
+            <img src="{% static 'img/logo_site2.png' %}" alt="Logo"
+                style="max-height: 100px; height: auto; width: auto; display: block; margin: 0 auto;">
             <h2 class="text-center mb-4">Entrar</h2>
             <form method="post">
                 {% csrf_token %}

@@ -20,6 +20,15 @@ class TipoTarefa(models.Model):
     def __str__(self):
         return self.nome
 
+class Implatacao(models.Model):
+    STATUS_CHOICES_IMPLATACAO = [
+        ('implantador','Implantador'),
+        ('analista','Analista'),
+        ('coordenador','Coordenador'),
+        ('gerente','Gerente')
+    ]
+    nome = models.CharField(max_length=100)
+    cargo = models.CharField(max_length=20, choices=STATUS_CHOICES_IMPLATACAO, default='implantador')
     
 class Tarefa(models.Model):
     STATUS_CHOICES = [
@@ -37,6 +46,11 @@ class Tarefa(models.Model):
     prazo = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='inicial')
     documentacao = models.TextField(blank=True)
+    link_glpi = models.TextField(blank=True)
+    link_redmine = models.TextField(blank=True)
+    analista = models.ForeignKey(Implatacao, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_analista')
+    implatador = models.ForeignKey(Implatacao, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_implantador')
+
 
     def __str__(self):
         return self.titulo

@@ -39,6 +39,8 @@
         {% for tarefa in tarefas_inicial %}
             <div class="card mb-3">
                 <div class="card-body">
+                    <a href="{% url 'iniciar_tempo' tarefa.id %}" class="btn btn-sm btn-success">Iniciar</a>
+                    <a href="{% url 'pausar_tempo' tarefa.id %}" class="btn btn-sm btn-warning">Pausar</a>
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>

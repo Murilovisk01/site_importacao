@@ -74,6 +74,21 @@ class Comentario(models.Model):
 
     def __str__(self):
         return f'{self.autor.username} - {self.criado_em.strftime("%d/%m/%Y %H:%M")}'
+
+class RegistroTempo(models.Model):
+    tarefa = models.ForeignKey('Tarefa', on_delete=models.CASCADE, related_name='registros_tempo')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    inicio = models.DateTimeField(auto_now_add=True)
+    fim = models.DateTimeField(null=True, blank=True)
+
+    def duracao(self):
+        if self.fim:
+            return self.fim - self.inicio
+        return None
+
+    def __str__(self):
+        return f"{self.usuario} - {self.tarefa} - {self.inicio} até {self.fim or 'em andamento'}"
+
   
 @receiver(post_save, sender=User)
 def criar_ou_atualizar_perfil(sender, instance, created, **kwargs):

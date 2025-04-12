@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, aprovar_membro, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, listar_implantador, listar_sistemas, listar_tipotarefas, minha_conta, mover_tarefa, painel_equipe, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, aprovar_membro, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_tipotarefas, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -7,6 +7,7 @@ urlpatterns = [
     path('dashboard/', dashboard_kanban, name='dashboard'),
     path('login/', CustomLoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('minha-conta/', minha_conta, name='minha_conta'),
 
     # Paginas tipo tarefa
     path('criar-tipo/', criar_tipo_tarefa, name='criar_tipo'),
@@ -20,12 +21,14 @@ urlpatterns = [
     path('editar-sistema/<int:sistema_id>/', editar_sistema, name='editar_sistema'),
     path('excluir_sistema/<int:sistema_id>/', excluir_sistema, name= 'excluir_sistema'),
 
+    # Paginas de tarefas
     path('criar-tarefa/', criar_tarefa, name='criar_tarefa'),
     path('editar-tarefa/<int:tarefa_id>/', editar_tarefa, name='editar_tarefa'),
     path('excluir-tarefa/<int:tarefa_id>/', excluir_tarefa, name='excluir_tarefa'),
     path('tarefa/<int:tarefa_id>/', detalhes_tarefa, name='detalhes_tarefa'),
     path('mover-tarefa/<int:tarefa_id>/<str:novo_status>/', mover_tarefa, name='mover_tarefa'),
 
+    # Paginas registro e equipe
     path('registro/', registro_usuario, name='registro'),
     path('equipe/', painel_equipe, name='painel_equipe'),
     path('equipe/aprovar/<int:perfil_id>/', aprovar_membro, name='aprovar_membro'),
@@ -33,11 +36,16 @@ urlpatterns = [
     path('equipe/remover/<int:perfil_id>/', remover_membro, name='remover_membro'),
 
     path('relatorio/', relatorio_equipe, name='relatorio_equipe'),
-    path('minha-conta/', minha_conta, name='minha_conta'),
     
+    # Paginas implatadores
     path('criar-implantador/', criar_implantador, name='criar_implantador'),
     path('implantadores/', listar_implantador, name='listar_implantador'),
     path('implantador-editar/<int:implantador_id>/', editar_implatador, name='editar_implatador'),
     path('excluir-implantador/<int:implantador_id>/',excluir_implantador,name='excluir_implantador'),
+
+    # Paginas Contador de tempo
+    path('tarefa/<int:tarefa_id>/iniciar/', iniciar_tempo, name='iniciar_tempo'),
+    path('tarefa/<int:tarefa_id>/pausar/', pausar_tempo, name='pausar_tempo'),
+
 
 ]

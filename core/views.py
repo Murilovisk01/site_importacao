@@ -5,12 +5,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden
-from .models import Implatacao, Tarefa, Sistema, TipoTarefa, Perfil
+from .models import Implatacao, RegistroTempo, Tarefa, Sistema, TipoTarefa, Perfil
 from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
 from django.db.models import Count
-from datetime import datetime
+from datetime import datetime, timezone
 from core.decorators import aprovado_required
 from django.forms import inlineformset_factory
 from django.db.models import Q
@@ -510,3 +510,27 @@ def excluir_implantador(request,implantador_id):
         return redirect('listar_implantador')
     
     return render(request,'core/confirmar_exclusao.html',{'implantador':implantador})
+
+@login_required
+def iniciar_tempo(request, tarefa_id):
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+
+    # Finaliza registros ativos de outras tarefas do usuário
+    RegistroTempo.objects.filter(usuario=request.user, fim__isnull=True).update(fim=timezone.now())
+
+    # Cria novo registro de tempo
+    RegistroTempo.objects.create(tarefa=tarefa, usuario=request.user, inicio=timezone.now())
+    messages.success(request, "Contador iniciado para a tarefa.")
+    return redirect('dashboard')
+
+@login_required
+def pausar_tempo(request, tarefa_id):
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+
+    # Encerra o último tempo aberto da tarefa para esse usuário
+    registro = RegistroTempo.objects.filter(tarefa=tarefa, usuario=request.user, fim__isnull=True).last()
+    if registro:
+        registro.fim = timezone.now()
+        registro.save()
+        messages.info(request, "Contador pausado.")
+    return redirect('dashboard')

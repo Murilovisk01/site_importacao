@@ -4,18 +4,19 @@ from django.contrib.auth import login,update_session_auth_hash
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden, JsonResponse
+from django.db.models import Count,Q
+from django.utils import timezone
+from django.utils.timezone import localtime
+from core.decorators import aprovado_required
+from django.forms import inlineformset_factory
+from django.views.decorators.csrf import csrf_exempt
+from collections import defaultdict
 from .models import Implatacao, RegistroTempo, Tarefa, Sistema, TipoTarefa, Perfil
 from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
-from django.contrib.auth.models import User
-from django.db.models import Count
-from django.utils import timezone
-from core.decorators import aprovado_required
-from django.forms import inlineformset_factory
-from django.db.models import Q
-from django.views.decorators.csrf import csrf_exempt
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -572,3 +573,20 @@ def concluir_tarefa(request, tarefa_id):
         tarefa.save()
 
         return JsonResponse({'status': 'concluida'})
+
+@login_required
+@aprovado_required
+def meu_relatorio_tempo(request):
+    registros_raw = RegistroTempo.objects.filter(usuario=request.user).select_related('tarefa').order_by('-inicio')
+
+    registros_por_dia = defaultdict(list)
+    for reg in registros_raw:
+        data_chave = localtime(reg.inicio).date()
+        registros_por_dia[data_chave].append(reg)
+
+    # ordena as datas decrescente
+    registros_ordenados = dict(sorted(registros_por_dia.items(), reverse=True))
+
+    return render(request, 'core/relatorio_individual.html', {
+        'registros_por_dia': registros_ordenados
+    })

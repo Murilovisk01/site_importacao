@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, aprovar_membro, concluir_tarefa, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_tipotarefas, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, aprovar_membro, concluir_tarefa, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -48,5 +48,6 @@ urlpatterns = [
     path('tarefa/<int:tarefa_id>/pausar/', pausar_tempo, name='pausar_tempo'),
     path('tarefa/<int:tarefa_id>/concluir/', concluir_tarefa, name='concluir_tarefa'),
 
+    path('meu-relatorio-tempo/', meu_relatorio_tempo, name='meu_relatorio_tempo'),
 
 ]

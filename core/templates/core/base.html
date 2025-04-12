@@ -22,11 +22,21 @@
           <div class="me-3 d-flex align-items-center">
             <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-light me-2">Dashboard</a>
             <a href="{% url 'listar_sistemas' %}" class="btn btn-sm btn-outline-light me-2">Sistemas</a>
+            <a href="{% url 'listar_sistemas' %}" class="btn btn-sm btn-outline-light me-2">Gerenciador Tempo</a>
             {% if user.perfil.is_gerente %}
-              <a href="{% url 'listar_tipotarefa' %}" class="btn btn-sm btn-outline-light me-2">Tipo de Tarefas</a>
-              <a href="{% url 'listar_implantador' %}" class="btn btn-sm btn-outline-light me-2">Implantação</a>
               <a href="{% url 'painel_equipe' %}" class="btn btn-sm btn-outline-light me-2">Painel da Equipe</a>
               <a href="{% url 'relatorio_equipe' %}" class="btn btn-sm btn-outline-light me-2">Relatórios</a>
+              <div class="dropdown me-3">
+                <button class="btn btn-sm btn-outline-light me-2" type="button" data-bs-toggle="dropdown">
+                  Mais
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                  <li><a class="dropdown-item" href="{% url 'listar_tipotarefa' %}">Tipos de Tarefas</a></li>
+                  <li><a class="dropdown-item" href="{% url 'listar_implantador' %}">Implantação</a></li>
+                  <!-- Adicione mais aqui se quiser -->
+                </ul>
+              </div>
+
             {% endif %}
           </div>
           <div class="text-light d-flex align-items-center">

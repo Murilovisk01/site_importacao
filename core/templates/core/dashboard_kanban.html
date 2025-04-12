@@ -40,9 +40,10 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <div id="tarefa-{{ tarefa.id }}">
-                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">Iniciar</button>
-                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">Pausar</button>
-                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">Concluir</button>
+                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
+                        <button class="btn btn-primary btn-sm reiniciar-btn d-none" data-id="{{ tarefa.id }}">⏱ Reiniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">⏱ Pausar</button>
+                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">⏱ Concluir</button>
                         <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
                     </div>
                     <h5>{{ tarefa.titulo }}</h5>
@@ -78,9 +79,10 @@
             <div class="card mb-3 border-warning">
                 <div class="card-body">
                     <div id="tarefa-{{ tarefa.id }}">
-                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">Iniciar</button>
-                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">Pausar</button>
-                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">Concluir</button>
+                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
+                        <button class="btn btn-primary btn-sm reiniciar-btn d-none" data-id="{{ tarefa.id }}">⏱ Reiniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">⏱ Pausar</button>
+                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">⏱ Concluir</button>
                         <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
                     </div>
                     <h5>{{ tarefa.titulo }}</h5>
@@ -114,9 +116,10 @@
             <div class="card mb-3 border-success">
                 <div class="card-body">
                     <div id="tarefa-{{ tarefa.id }}">
-                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">Iniciar</button>
-                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">Pausar</button>
-                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">Concluir</button>
+                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
+                        <button class="btn btn-primary btn-sm reiniciar-btn d-none" data-id="{{ tarefa.id }}">⏱ Reiniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">⏱ Pausar</button>
+                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">⏱ Concluir</button>
                         <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
                     </div>
                     <h5>{{ tarefa.titulo }}</h5>
@@ -194,10 +197,14 @@
             .then(r => r.json())
             .then(data => {
                 clearInterval(cronometros[id]);
-                location.reload();  // ou atualiza o card dinamicamente
+    
+                const el = document.querySelector(`#tarefa-${id}`);
+                el.querySelector('.pausar-btn')?.classList.add('d-none');
+                el.querySelector('.reiniciar-btn')?.classList.remove('d-none');
+                el.querySelector('.concluir-btn')?.classList.remove('d-none');
             });
         });
-    });
+    })
     
     document.querySelectorAll('.concluir-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -214,22 +221,58 @@
         });
     });
 
-        // 🟡 NOVO BLOCO — Renderizar cronômetros já em andamento
+    document.querySelectorAll('.reiniciar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            fetch(`/tarefa/${id}/iniciar/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.inicio) {
+                    iniciarCronometro(id, data.inicio, data.acumulado || 0);
+    
+                    const el = document.querySelector(`#tarefa-${id}`);
+                    btn.classList.add('d-none');
+                    el.querySelector('.pausar-btn')?.classList.remove('d-none');
+                    el.querySelector('.concluir-btn')?.classList.remove('d-none');
+                }
+            });
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
         {% for tarefa in tarefas_inicial|add:tarefas_andamento|add:tarefas_concluida %}
-        {% with registro=tarefa.registros_tempo.last %}
-            {% if registro and not registro.fim %}
-                <script>
-                    iniciarCronometro({{ tarefa.id }}, "{{ registro.inicio|date:'Y-m-d H:i:s' }}");
-                    document.addEventListener("DOMContentLoaded", function () {
-                        document.querySelector(`#tarefa-{{ tarefa.id }} .iniciar-btn`)?.classList.add('d-none');
-                        document.querySelector(`#tarefa-{{ tarefa.id }} .pausar-btn`)?.classList.remove('d-none');
-                        document.querySelector(`#tarefa-{{ tarefa.id }} .concluir-btn`)?.classList.remove('d-none');
-                    });
-                </script>
-            {% endif %}
-        {% endwith %}
-    {% endfor %}
-
-    </script>
+            {% with registro=tarefa.registros_tempo.last %}
+                (function () {
+                    const el = document.querySelector(`#tarefa-{{ tarefa.id }}`);
+                    const cron = el.querySelector(`#cronometro-{{ tarefa.id }}`);
+                    
+                    {% if registro and not registro.fim %}
+                        iniciarCronometro({{ tarefa.id }}, "{{ registro.inicio|date:'Y-m-d H:i:s' }}");
+                        el.querySelector('.iniciar-btn')?.classList.add('d-none');
+                        el.querySelector('.pausar-btn')?.classList.remove('d-none');
+                        el.querySelector('.concluir-btn')?.classList.remove('d-none');
+    
+                    {% elif registro and registro.fim %}
+                        const inicio = new Date("{{ registro.inicio|date:'Y-m-d H:i:s' }}");
+                        const fim = new Date("{{ registro.fim|date:'Y-m-d H:i:s' }}");
+                        const diff = Math.floor((fim - inicio) / 1000);
+                        const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+                        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                        const s = String(diff % 60).padStart(2, '0');
+                        cron.innerText = `⏱ ${h}:${m}:${s}`;
+    
+                        el.querySelector('.iniciar-btn')?.classList.add('d-none');
+                        el.querySelector('.reiniciar-btn')?.classList.remove('d-none');
+                        el.querySelector('.concluir-btn')?.classList.remove('d-none');
+                    {% endif %}
+                })();
+            {% endwith %}
+        {% endfor %}
+    });
+</script>
     
 {% endblock %}

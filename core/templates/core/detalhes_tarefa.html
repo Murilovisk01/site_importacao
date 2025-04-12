@@ -6,37 +6,34 @@
 <div class="col-md-8 offset-md-2">
     <div class="card shadow p-4">
         <h2>{{ tarefa.titulo }}</h2>
+        <hr>
         <p><strong>Status:</strong> {{ tarefa.get_status_display }}</p>
         <p><strong>Sistema:</strong> {{ tarefa.sistema }}</p>
         <p><strong>Tipo:</strong> {{ tarefa.tipo }}</p>
         <p><strong>Prazo:</strong> {{ tarefa.prazo }}</p>
         <p><strong>Criado por:</strong> {{ tarefa.criado_por }}</p>
         <p><strong>Atribuído para:</strong> {{ tarefa.atribuido_para }}</p>
+        <p><strong>Link GLPI:</strong> {{ tarefa.link_glpi }}</p>
+        <p><strong>Link Redmine:</strong> {{ tarefa.link_redmine }}</p>
+        <p><strong>Analista:</strong> {{ tarefa.analista }}</p>
+        <p><strong>Implatador:</strong> {{ tarefa.implatador }}</p>
+        <hr>
         <h5><strong>Documentação da Tarefa:</strong></h5>
         <div style="white-space: pre-wrap;" class="bg-light p-3 rounded">
             {{ tarefa.documentacao|urlize|linebreaksbr }}
         </div>
-        {% if tarefa.tipo.secoes.exists %}
-            <h5 class="mt-4"><strong>Checklist:</strong></h5>
-            {% for secao in tarefa.tipo.secoes.all %}
-                <div class="mb-3">
-                    <h6 class="mb-2">{{ secao.titulo }}</h6>
-                    <ul class="list-group">
-                        {% for item in secao.itens.all %}
-                            <li class="list-group-item d-flex align-items-center">
-                                <input type="checkbox" class="form-check-input me-2" disabled {% if item.obrigatorio %}checked{% endif %}>
-                                {{ item.descricao }}
-                            </li>
-                        {% empty %}
-                            <li class="list-group-item text-muted">Sem itens nesta seção.</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
-        {% endif %}
-
         <hr>
-        <h5>Comentários</h5>
+        <h5><strong>Tempo:</strong></h5>
+        {% if tempo_total != "0:00:00" %}
+            <div class="alert alert-info">
+                <strong>Tempo total gasto:</strong> {{ tempo_total }}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                Nenhum tempo registrado ainda.
+            </div>
+        {% endif %}
+        <h5><strong>Comentários:</strong></h5>
 
         <form method="post" class="mb-3" id="comentario-form">
             {% csrf_token %}

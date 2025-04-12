@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth import login,update_session_auth_hash
 from django.contrib.auth.views import LoginView
@@ -240,6 +241,13 @@ def excluir_tarefa(request, tarefa_id):
 @aprovado_required
 def detalhes_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+    # Calcular tempo total da tarefa
+    registros = tarefa.registros_tempo.all()
+    total_segundos = sum(
+        [(r.fim - r.inicio if r.fim else timezone.now() - r.inicio).total_seconds() for r in registros],
+        0
+    )
+    tempo_total = str(timedelta(seconds=int(total_segundos)))
 
     if request.method == 'POST':
         form = ComentarioForm(request.POST)
@@ -261,6 +269,7 @@ def detalhes_tarefa(request, tarefa_id):
         'tarefa': tarefa,
         'form': form,
         'comentarios': comentarios,
+        'tempo_total': tempo_total,
     })
 
 @login_required

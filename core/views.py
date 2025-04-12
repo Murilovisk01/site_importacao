@@ -4,16 +4,17 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect,get_object_or_404
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from .models import Implatacao, RegistroTempo, Tarefa, Sistema, TipoTarefa, Perfil
 from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from django.contrib.auth.models import User
 from django.db.models import Count
-from datetime import datetime, timezone
+from django.utils import timezone
 from core.decorators import aprovado_required
 from django.forms import inlineformset_factory
 from django.db.models import Q
+from django.views.decorators.csrf import csrf_exempt
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -68,6 +69,7 @@ def dashboard_kanban(request):
         'tarefas_inicial': tarefas_inicial,
         'tarefas_andamento': tarefas_andamento,
         'tarefas_concluida': tarefas_concluida,
+         'tarefas': tarefas_inicial | tarefas_andamento,
         'filtro_membro': int(membro_id) if membro_id else None,
         'busca': busca or '',
     })
@@ -478,7 +480,6 @@ def criar_implantador(request):
 @login_required
 @aprovado_required
 def listar_implantador(request):
-
     implantadores = Implatacao.objects.all()
     return render(request, 'core/listar_implantador.html', {'implantadores': implantadores})
 
@@ -511,26 +512,48 @@ def excluir_implantador(request,implantador_id):
     
     return render(request,'core/confirmar_exclusao.html',{'implantador':implantador})
 
+@csrf_exempt
 @login_required
+@aprovado_required
 def iniciar_tempo(request, tarefa_id):
-    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+    if request.method == 'POST':
+        tarefa = Tarefa.objects.get(id=tarefa_id)
 
-    # Finaliza registros ativos de outras tarefas do usuário
-    RegistroTempo.objects.filter(usuario=request.user, fim__isnull=True).update(fim=timezone.now())
+        # Finaliza qualquer tempo aberto
+        RegistroTempo.objects.filter(usuario=request.user, fim__isnull=True).update(fim=timezone.now())
 
-    # Cria novo registro de tempo
-    RegistroTempo.objects.create(tarefa=tarefa, usuario=request.user, inicio=timezone.now())
-    messages.success(request, "Contador iniciado para a tarefa.")
-    return redirect('dashboard')
+        # Cria novo registro
+        registro = RegistroTempo.objects.create(
+            tarefa=tarefa,
+            usuario=request.user,
+            inicio=timezone.now()
+        )
 
+        return JsonResponse({'inicio': registro.inicio.isoformat()})
+
+@csrf_exempt
 @login_required
+@aprovado_required
 def pausar_tempo(request, tarefa_id):
-    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+    if request.method == 'POST':
+        RegistroTempo.objects.filter(
+            usuario=request.user, tarefa_id=tarefa_id, fim__isnull=True
+        ).update(fim=timezone.now())
 
-    # Encerra o último tempo aberto da tarefa para esse usuário
-    registro = RegistroTempo.objects.filter(tarefa=tarefa, usuario=request.user, fim__isnull=True).last()
-    if registro:
-        registro.fim = timezone.now()
-        registro.save()
-        messages.info(request, "Contador pausado.")
-    return redirect('dashboard')
+        return JsonResponse({'status': 'pausado'})
+
+@csrf_exempt
+@login_required
+@aprovado_required
+def concluir_tarefa(request, tarefa_id):
+    if request.method == 'POST':
+        tarefa = Tarefa.objects.get(id=tarefa_id)
+
+        # Pausa o tempo
+        RegistroTempo.objects.filter(usuario=request.user, tarefa=tarefa, fim__isnull=True).update(fim=timezone.now())
+
+        # Marca como concluída
+        tarefa.status = 'concluida'
+        tarefa.save()
+
+        return JsonResponse({'status': 'concluida'})

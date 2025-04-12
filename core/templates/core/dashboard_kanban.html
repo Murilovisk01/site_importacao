@@ -39,8 +39,12 @@
         {% for tarefa in tarefas_inicial %}
             <div class="card mb-3">
                 <div class="card-body">
-                    <a href="{% url 'iniciar_tempo' tarefa.id %}" class="btn btn-sm btn-success">Iniciar</a>
-                    <a href="{% url 'pausar_tempo' tarefa.id %}" class="btn btn-sm btn-warning">Pausar</a>
+                    <div id="tarefa-{{ tarefa.id }}">
+                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">Iniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">Pausar</button>
+                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">Concluir</button>
+                        <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
+                    </div>
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
@@ -128,4 +132,74 @@
         {% endfor %}
     </div>
 </div>
+<script>
+    const cronometros = {};
+    
+    function iniciarCronometro(id, inicioStr) {
+        const cron = document.getElementById(`cronometro-${id}`);
+        const inicio = new Date(inicioStr);
+    
+        function atualizar() {
+            const agora = new Date();
+            const diff = Math.floor((agora - inicio) / 1000);
+            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            cron.innerText = `⏱ ${h}:${m}:${s}`;
+        }
+    
+        atualizar();
+        cronometros[id] = setInterval(atualizar, 1000);
+    }
+    
+    document.querySelectorAll('.iniciar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            fetch(`/tarefa/${id}/iniciar/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.inicio) {
+                    iniciarCronometro(id, data.inicio);
+                    btn.classList.add('d-none');
+                    document.querySelector(`#tarefa-${id} .pausar-btn`).classList.remove('d-none');
+                    document.querySelector(`#tarefa-${id} .concluir-btn`).classList.remove('d-none');
+                }
+            });
+        });
+    });
+    
+    document.querySelectorAll('.pausar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            fetch(`/tarefa/${id}/pausar/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                clearInterval(cronometros[id]);
+                location.reload();  // ou atualiza o card dinamicamente
+            });
+        });
+    });
+    
+    document.querySelectorAll('.concluir-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            fetch(`/tarefa/${id}/concluir/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                clearInterval(cronometros[id]);
+                location.reload();
+            });
+        });
+    });
+    </script>
+    
 {% endblock %}

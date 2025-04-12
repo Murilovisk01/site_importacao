@@ -78,16 +78,19 @@ class Comentario(models.Model):
 class RegistroTempo(models.Model):
     tarefa = models.ForeignKey('Tarefa', on_delete=models.CASCADE, related_name='registros_tempo')
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
-    inicio = models.DateTimeField(auto_now_add=True)
+    inicio = models.DateTimeField()
     fim = models.DateTimeField(null=True, blank=True)
 
     def duracao(self):
         if self.fim:
-            return self.fim - self.inicio
+            diff = self.fim - self.inicio
+            horas, resto = divmod(diff.total_seconds(), 3600)
+            minutos, _ = divmod(resto, 60)
+            return f"{int(horas)}h {int(minutos)}min"
         return None
 
     def __str__(self):
-        return f"{self.usuario} - {self.tarefa} - {self.inicio} até {self.fim or 'em andamento'}"
+        return f"{self.tarefa.titulo} - {self.inicio.strftime('%d/%m/%Y %H:%M')}"
 
   
 @receiver(post_save, sender=User)

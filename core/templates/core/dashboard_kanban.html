@@ -77,6 +77,12 @@
         {% for tarefa in tarefas_andamento %}
             <div class="card mb-3 border-warning">
                 <div class="card-body">
+                    <div id="tarefa-{{ tarefa.id }}">
+                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">Iniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">Pausar</button>
+                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">Concluir</button>
+                        <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
+                    </div>
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
@@ -107,6 +113,12 @@
         {% for tarefa in tarefas_concluida %}
             <div class="card mb-3 border-success">
                 <div class="card-body">
+                    <div id="tarefa-{{ tarefa.id }}">
+                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">Iniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">Pausar</button>
+                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">Concluir</button>
+                        <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
+                    </div>
                     <h5>{{ tarefa.titulo }}</h5>
                     <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
                     <small>Prazo: {{ tarefa.prazo }}</small><br>
@@ -200,6 +212,23 @@
             });
         });
     });
+
+        // 🟡 NOVO BLOCO — Renderizar cronômetros já em andamento
+        {% for tarefa in tarefas_inicial|add:tarefas_andamento|add:tarefas_concluida %}
+        {% with registro=tarefa.registros_tempo.last %}
+            {% if registro and not registro.fim %}
+                <script>
+                    iniciarCronometro({{ tarefa.id }}, "{{ registro.inicio|date:'Y-m-d H:i:s' }}");
+                    document.addEventListener("DOMContentLoaded", function () {
+                        document.querySelector(`#tarefa-{{ tarefa.id }} .iniciar-btn`)?.classList.add('d-none');
+                        document.querySelector(`#tarefa-{{ tarefa.id }} .pausar-btn`)?.classList.remove('d-none');
+                        document.querySelector(`#tarefa-{{ tarefa.id }} .concluir-btn`)?.classList.remove('d-none');
+                    });
+                </script>
+            {% endif %}
+        {% endwith %}
+    {% endfor %}
+    
     </script>
     
 {% endblock %}

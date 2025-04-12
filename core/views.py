@@ -517,19 +517,25 @@ def excluir_implantador(request,implantador_id):
 @aprovado_required
 def iniciar_tempo(request, tarefa_id):
     if request.method == 'POST':
-        tarefa = Tarefa.objects.get(id=tarefa_id)
+        tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
-        # Finaliza qualquer tempo aberto
+        # Fecha outros registros abertos
         RegistroTempo.objects.filter(usuario=request.user, fim__isnull=True).update(fim=timezone.now())
 
-        # Cria novo registro
+        # Tempo acumulado anterior da tarefa por este usuário
+        registros = RegistroTempo.objects.filter(usuario=request.user, tarefa=tarefa, fim__isnull=False)
+        tempo_acumulado = sum([(r.fim - r.inicio).total_seconds() for r in registros], 0)
+
         registro = RegistroTempo.objects.create(
-            tarefa=tarefa,
             usuario=request.user,
+            tarefa=tarefa,
             inicio=timezone.now()
         )
 
-        return JsonResponse({'inicio': registro.inicio.isoformat()})
+        return JsonResponse({
+            'inicio': registro.inicio.isoformat(),
+            'acumulado': int(tempo_acumulado)
+        })
 
 @csrf_exempt
 @login_required

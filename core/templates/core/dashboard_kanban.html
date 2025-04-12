@@ -147,13 +147,14 @@
 <script>
     const cronometros = {};
     
-    function iniciarCronometro(id, inicioStr) {
+    function iniciarCronometro(id, inicioStr, acumulado = 0) {
         const cron = document.getElementById(`cronometro-${id}`);
         const inicio = new Date(inicioStr);
     
         function atualizar() {
             const agora = new Date();
-            const diff = Math.floor((agora - inicio) / 1000);
+            const diff = Math.floor((agora - inicio) / 1000) + acumulado;
+    
             const h = String(Math.floor(diff / 3600)).padStart(2, '0');
             const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
             const s = String(diff % 60).padStart(2, '0');
@@ -174,7 +175,7 @@
             .then(r => r.json())
             .then(data => {
                 if (data.inicio) {
-                    iniciarCronometro(id, data.inicio);
+                    iniciarCronometro(id, data.inicio, data.acumulado || 0);
                     btn.classList.add('d-none');
                     document.querySelector(`#tarefa-${id} .pausar-btn`).classList.remove('d-none');
                     document.querySelector(`#tarefa-${id} .concluir-btn`).classList.remove('d-none');
@@ -228,7 +229,7 @@
             {% endif %}
         {% endwith %}
     {% endfor %}
-    
+
     </script>
     
 {% endblock %}

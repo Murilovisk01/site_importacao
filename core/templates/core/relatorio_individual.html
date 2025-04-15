@@ -49,6 +49,7 @@
                     {% endif %}
                 </p>
                 <p><strong>Status da Tarefa:</strong> {{ registro.tarefa.get_status_display }}</p>
+                <a href="{% url 'editar_registro_tempo' registro.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
             </div>
         </div>
     {% endfor %}

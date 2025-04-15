@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, TarefaAutocomplete, aprovar_membro, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registrar_tempo_manual, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, TarefaAutocomplete, aprovar_membro, criar_implantador, criar_sistema, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_registro_tempo, editar_sistema, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registrar_tempo_manual, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -46,9 +46,10 @@ urlpatterns = [
     # Paginas Contador de tempo
     path('tarefa/<int:tarefa_id>/iniciar/', iniciar_tempo, name='iniciar_tempo'),
     path('tarefa/<int:tarefa_id>/pausar/', pausar_tempo, name='pausar_tempo'),
+    path('tempo/manual/', registrar_tempo_manual, name='tempo_manual'),
+    path('tempo/<int:pk>/editar/', editar_registro_tempo, name='editar_registro_tempo'),
 
     path('meu-relatorio-tempo/', meu_relatorio_tempo, name='meu_relatorio_tempo'),
-    path('tempo/manual/', registrar_tempo_manual, name='tempo_manual'),
     path('tarefa-autocomplete/', TarefaAutocomplete.as_view(), name='tarefa-autocomplete'),
 
 ]

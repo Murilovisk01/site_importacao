@@ -149,6 +149,7 @@ def excluir_tipo_tarefa(request, tipo_id):
     
     if request.method == 'POST':
         tipo.delete()
+        messages.success(request, "Tipo de tarefa excluido com sucesso.")
         return redirect('listar_tipotarefa')
     
     return render(request, 'core/confirmar_exclusao.html', {'tipo':tipo})
@@ -185,6 +186,7 @@ def editar_sistema(request, sistema_id):
         form = SistemaForm(request.POST, request.FILES, instance=sistema,)
         if form.is_valid():
             form.save()
+            messages.success(request, "sistema editado com sucesso.")
             return redirect('listar_sistemas')
     else:
         form = SistemaForm(instance=sistema)
@@ -201,6 +203,7 @@ def excluir_sistema(request,sistema_id):
     
     if request.method == 'POST':
         sistema.delete()
+        messages.success(request, "Sistema excluido com sucesso.")
         return redirect('listar_sistemas')
     
     return render(request,'core/confirmar_exclusao.html',{'sistema':sistema})
@@ -214,6 +217,7 @@ def criar_tarefa(request):
             tarefa = form.save(commit=False)
             tarefa.criado_por = request.user
             tarefa.save()
+            messages.success(request, "Tarefa criado com sucesso.")
             return redirect('dashboard')
     else:
         form = TarefaForm()
@@ -232,6 +236,7 @@ def editar_tarefa(request, tarefa_id):
         form = TarefaForm(request.POST or None, instance=tarefa, user=request.user)
         if form.is_valid():
             form.save()
+            messages.success(request, "Tarefa editada com sucesso.")
             return redirect('dashboard')
     else:
         form = TarefaForm(instance=tarefa)
@@ -253,6 +258,7 @@ def excluir_tarefa(request, tarefa_id):
 
     if request.method == 'POST':
         tarefa.delete()
+        messages.success(request, "Tarefa excluida com sucesso.")
         return redirect('dashboard')
 
     return render(request, 'core/confirmar_exclusao.html', {'tarefa': tarefa})
@@ -554,6 +560,7 @@ def editar_implatador(request, implantador_id):
         form = ImplantacaoForm(request.POST, request.FILES, instance=implantador,)
         if form.is_valid():
             form.save()
+            messages.success(request, "Implantador editado com sucesso.")
             return redirect('listar_implantador')
     else:
         form = ImplantacaoForm(instance=implantador)
@@ -570,6 +577,7 @@ def excluir_implantador(request,implantador_id):
     
     if request.method == 'POST':
         implantador.delete()
+        messages.success(request, "Implantador excluido com sucesso.")
         return redirect('listar_implantador')
     
     return render(request,'core/confirmar_exclusao.html',{'implantador':implantador})
@@ -653,10 +661,31 @@ def registrar_tempo_manual(request):
         if form.is_valid():
             registro = form.save(commit=False)
             registro.usuario = request.user
+            messages.success(request, "Tempo manual criado com sucesso.")
             registro.save()
             return redirect('meu_relatorio_tempo')  # ou onde desejar
     else:
         form = RegistroTempoForm()
+    return render(request, 'core/registro_tempo_form.html', {'form': form})
+
+@login_required
+@aprovado_required
+def editar_registro_tempo(request, pk):
+    registro = get_object_or_404(RegistroTempo, pk=pk)
+
+    # 🔒 Verifica se o usuário logado é o dono do registro
+    if registro.usuario != request.user:
+        return HttpResponseForbidden("Você não tem permissão para editar este registro.")
+
+    if request.method == 'POST':
+        form = RegistroTempoForm(request.POST, instance=registro)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tempo editado com sucesso.")
+            return redirect('meu_relatorio_tempo')
+    else:
+        form = RegistroTempoForm(instance=registro)
+
     return render(request, 'core/registro_tempo_form.html', {'form': form})
 
 class TarefaAutocomplete(autocomplete.Select2QuerySetView):

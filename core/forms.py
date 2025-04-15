@@ -138,6 +138,17 @@ class RegistroTempoForm(forms.ModelForm):
                 url='tarefa-autocomplete',
                 attrs={'data-placeholder': 'Buscar tarefa...', 'class': 'form-control'}  # <-- aqui o ajuste
             ),
-            'inicio': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'fim': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+             'inicio': forms.DateTimeInput(
+                format='%Y-%m-%dT%H:%M',
+                attrs={'type': 'datetime-local', 'class': 'form-control'}
+            ),
+            'fim': forms.DateTimeInput(
+                format='%Y-%m-%dT%H:%M',
+                attrs={'type': 'datetime-local', 'class': 'form-control'}
+            ),
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for campo in ['inicio', 'fim']:
+            if self.instance.pk and getattr(self.instance, campo):
+                self.fields[campo].initial = getattr(self.instance, campo).strftime('%Y-%m-%dT%H:%M')

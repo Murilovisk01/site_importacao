@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-
+{% load custom_tags %}
 {% block title %}Kanban{% endblock %}
 
 {% block content %}
@@ -7,272 +7,104 @@
 <a href="{% url 'criar_tarefa' %}" class="btn btn-primary mb-3">+ Nova Tarefa</a>
 
 <form method="get" class="row mb-4 g-2">
-    <div class="col-md-4">
-        <select name="membro" class="form-select">
-            <option value="">Todos os membros</option>
-            {% for membro in membros %}
-                <option value="{{ membro.id }}" {% if filtro_membro == membro.id %}selected{% endif %}>
-                    {{ membro.username }}
-                </option>
-            {% endfor %}
-        </select>
+    <div class="col-md-10">
+      <input type="text" name="q" class="form-control" placeholder="Buscar tarefas por título..." value="{{ busca }}">
     </div>
-
-    <div class="col-md-4">
-        <input type="text" name="q" class="form-control" placeholder="Buscar por título" value="{{ busca }}">
-    </div>
-
     <div class="col-md-2">
-        <button type="submit" class="btn btn-outline-primary w-100">Filtrar</button>
+      <button type="submit" class="btn btn-outline-primary w-100">Buscar</button>
     </div>
-
-    {% if filtro_membro or busca %}
-    <div class="col-md-2">
-        <a href="{% url 'dashboard' %}" class="btn btn-outline-danger w-100">Limpar</a>
-    </div>
-    {% endif %}
-</form>
+  </form>
+  
 
 <div class="row">
+    {% for status, titulo, tarefas in status_colunas %}
     <div class="col-md-4">
-        <h4 class="text-center text-secondary">Inicial</h4>
-        {% for tarefa in tarefas_inicial %}
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div id="tarefa-{{ tarefa.id }}">
-                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
-                        <button class="btn btn-primary btn-sm reiniciar-btn d-none" data-id="{{ tarefa.id }}">⏱ Reiniciar</button>
-                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">⏱ Pausar</button>
-                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">⏱ Concluir</button>
-                        <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
+        <h4 class="text-center text-{{ cor }}">{{ titulo }}</h4>
+        {% for tarefa in tarefas %}
+        <div class="card mb-3 {% if status == 'andamento' %}border-warning{% elif status == 'concluida' %}border-success{% endif %}">
+            <div class="card-body">
+                <div id="tarefa-{{ tarefa.id }}">
+                    <div class="d-flex align-items-center mb-2">
+                        <button class="btn btn-success btn-sm iniciar-btn me-2" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
+                        <button class="btn btn-warning btn-sm pausar-btn d-none me-2" data-id="{{ tarefa.id }}">⏱ Pausar</button>
+                        <div class="tempo tempo-andamento fw-semibold" id="cronometro-{{ tarefa.id }}"
+                            data-acumulado="{{ acumulados|get_item:tarefa.id|default:0 }}"
+                            {% with registro=tarefa.registros_tempo.last %}
+                                {% if registro and not registro.fim %}
+                                    data-inicio="{{ registro.inicio|date:'Y-m-d\\TH:i:s' }}"
+                                {% endif %}
+                            {% endwith %}></div>
                     </div>
-                    <h5>{{ tarefa.titulo }}</h5>
-                    <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
-                    <small>Prazo: {{ tarefa.prazo }}</small><br>
-                    <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
-                    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
-                    
-                    {% if tarefa.status != 'inicial' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>
-                    {% endif %}
-                    {% if tarefa.status != 'andamento' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>
-                    {% endif %}
-                    {% if tarefa.status != 'concluida' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>
-                    {% endif %}
-
-                    {% if user == tarefa.criado_por %}
-                        <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
-                    {% endif %}
-
                 </div>
+                <h5>{{ tarefa.titulo }}</h5>
+                <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
+                <small>Prazo: {{ tarefa.prazo }}</small><br>
+                <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
+                <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
+                {% if tarefa.status != 'inicial' %}<a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>{% endif %}
+                {% if tarefa.status != 'andamento' %}<a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>{% endif %}
+                {% if tarefa.status != 'concluida' %}<a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>{% endif %}
+                {% if user == tarefa.criado_por %}<a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>{% endif %}
             </div>
-        {% empty %}
-            <p class="text-muted">Sem tarefas</p>
-        {% endfor %}
+        </div>
+        {% empty %}<p class="text-muted">Sem tarefas</p>{% endfor %}
     </div>
-
-    <div class="col-md-4">
-        <h4 class="text-center text-warning">Em andamento</h4>
-        {% for tarefa in tarefas_andamento %}
-            <div class="card mb-3 border-warning">
-                <div class="card-body">
-                    <div id="tarefa-{{ tarefa.id }}">
-                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
-                        <button class="btn btn-primary btn-sm reiniciar-btn d-none" data-id="{{ tarefa.id }}">⏱ Reiniciar</button>
-                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">⏱ Pausar</button>
-                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">⏱ Concluir</button>
-                        <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
-                    </div>
-                    <h5>{{ tarefa.titulo }}</h5>
-                    <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
-                    <small>Prazo: {{ tarefa.prazo }}</small><br>
-                    <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
-                    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
-
-                    {% if tarefa.status != 'inicial' %}
-                    <a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>
-                    {% endif %}
-                    {% if tarefa.status != 'andamento' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>
-                    {% endif %}
-                    {% if tarefa.status != 'concluida' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>
-                    {% endif %}
-                    {% if user == tarefa.criado_por %}
-                        <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
-                    {% endif %}
-                </div>
-            </div>
-        {% empty %}
-            <p class="text-muted">Sem tarefas</p>
-        {% endfor %}
-    </div>
-
-    <div class="col-md-4">
-        <h4 class="text-center text-success">Concluída</h4>
-        {% for tarefa in tarefas_concluida %}
-            <div class="card mb-3 border-success">
-                <div class="card-body">
-                    <div id="tarefa-{{ tarefa.id }}">
-                        <button class="btn btn-success btn-sm iniciar-btn" data-id="{{ tarefa.id }}">⏱ Iniciar</button>
-                        <button class="btn btn-primary btn-sm reiniciar-btn d-none" data-id="{{ tarefa.id }}">⏱ Reiniciar</button>
-                        <button class="btn btn-warning btn-sm pausar-btn d-none" data-id="{{ tarefa.id }}">⏱ Pausar</button>
-                        <button class="btn btn-danger btn-sm concluir-btn d-none" data-id="{{ tarefa.id }}">⏱ Concluir</button>
-                        <div class="tempo" id="cronometro-{{ tarefa.id }}"></div>
-                    </div>
-                    <h5>{{ tarefa.titulo }}</h5>
-                    <small>{{ tarefa.sistema }} - {{ tarefa.tipo }}</small><br>
-                    <small>Prazo: {{ tarefa.prazo }}</small><br>
-                    <small>Atribuido: {{ tarefa.atribuido_para }}</small><br>
-                    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-info mt-2">Detalhes</a>
-                    {% if tarefa.status != 'inicial' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>
-                    {% endif %}
-                    {% if tarefa.status != 'andamento' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>
-                    {% endif %}
-                    {% if tarefa.status != 'concluida' %}
-                        <a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>
-                    {% endif %}
-                    
-                    {% if user == tarefa.criado_por %}
-                        <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
-                    {% endif %}
-                </div>
-            </div>
-        {% empty %}
-            <p class="text-muted">Sem tarefas</p>
-        {% endfor %}
-    </div>
+    {% endfor %}
 </div>
+
 <script>
-    const cronometros = {};
+    function atualizarTemposKanban() {
+        const elementos = document.querySelectorAll('.tempo');
+        elementos.forEach(elem => {
+            const inicioStr = elem.getAttribute('data-inicio');
+            const acumulado = parseInt(elem.getAttribute('data-acumulado') || '0');
     
-    function iniciarCronometro(id, inicioStr, acumulado = 0) {
-        const cron = document.getElementById(`cronometro-${id}`);
-        const inicio = new Date(inicioStr);
+            let total = acumulado;
+            if (inicioStr) {
+                const inicio = new Date(inicioStr);
+                const agora = new Date();
+                total += Math.floor((agora - inicio) / 1000);
+            }
     
-        function atualizar() {
-            const agora = new Date();
-            const diff = Math.floor((agora - inicio) / 1000) + acumulado;
+            const h = String(Math.floor(total / 3600)).padStart(2, '0');
+            const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+            const s = String(total % 60).padStart(2, '0');
+            elem.textContent = `⏱ ${h}:${m}:${s}`;
     
-            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-            const s = String(diff % 60).padStart(2, '0');
-            cron.innerText = `⏱ ${h}:${m}:${s}`;
-        }
-    
-        atualizar();
-        cronometros[id] = setInterval(atualizar, 1000);
+            const id = elem.id.replace('cronometro-', '');
+            const el = document.getElementById(`tarefa-${id}`);
+            if (inicioStr) {
+                el.querySelector('.iniciar-btn')?.classList.add('d-none');
+                el.querySelector('.pausar-btn')?.classList.remove('d-none');
+            } else {
+                el.querySelector('.iniciar-btn')?.classList.remove('d-none');
+                el.querySelector('.pausar-btn')?.classList.add('d-none');
+            }
+        });
     }
     
+    // Atualizar cronômetros a cada segundo
+    setInterval(atualizarTemposKanban, 1000);
+    document.addEventListener('DOMContentLoaded', atualizarTemposKanban);
+    
+    // Ações de iniciar e pausar
     document.querySelectorAll('.iniciar-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
             fetch(`/tarefa/${id}/iniciar/`, {
                 method: 'POST',
                 headers: {'X-CSRFToken': '{{ csrf_token }}'}
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.inicio) {
-                    iniciarCronometro(id, data.inicio, data.acumulado || 0);
-                    btn.classList.add('d-none');
-                    document.querySelector(`#tarefa-${id} .pausar-btn`).classList.remove('d-none');
-                    document.querySelector(`#tarefa-${id} .concluir-btn`).classList.remove('d-none');
-                }
-            });
+            }).then(res => res.json()).then(data => location.reload());
         });
     });
-    
     document.querySelectorAll('.pausar-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
             fetch(`/tarefa/${id}/pausar/`, {
                 method: 'POST',
                 headers: {'X-CSRFToken': '{{ csrf_token }}'}
-            })
-            .then(r => r.json())
-            .then(data => {
-                clearInterval(cronometros[id]);
-    
-                const el = document.querySelector(`#tarefa-${id}`);
-                el.querySelector('.pausar-btn')?.classList.add('d-none');
-                el.querySelector('.reiniciar-btn')?.classList.remove('d-none');
-                el.querySelector('.concluir-btn')?.classList.remove('d-none');
-            });
-        });
-    })
-    
-    document.querySelectorAll('.concluir-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.id;
-            fetch(`/tarefa/${id}/concluir/`, {
-                method: 'POST',
-                headers: {'X-CSRFToken': '{{ csrf_token }}'}
-            })
-            .then(r => r.json())
-            .then(data => {
-                clearInterval(cronometros[id]);
-                location.reload();
-            });
+            }).then(res => res.json()).then(() => location.reload());
         });
     });
-
-    document.querySelectorAll('.reiniciar-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.id;
-            fetch(`/tarefa/${id}/iniciar/`, {
-                method: 'POST',
-                headers: {'X-CSRFToken': '{{ csrf_token }}'}
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.inicio) {
-                    iniciarCronometro(id, data.inicio, data.acumulado || 0);
-    
-                    const el = document.querySelector(`#tarefa-${id}`);
-                    btn.classList.add('d-none');
-                    el.querySelector('.pausar-btn')?.classList.remove('d-none');
-                    el.querySelector('.concluir-btn')?.classList.remove('d-none');
-                }
-            });
-        });
-    });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        {% for tarefa in tarefas_inicial|add:tarefas_andamento|add:tarefas_concluida %}
-            {% with registro=tarefa.registros_tempo.last %}
-                (function () {
-                    const el = document.querySelector(`#tarefa-{{ tarefa.id }}`);
-                    const cron = el.querySelector(`#cronometro-{{ tarefa.id }}`);
-                    
-                    {% if registro and not registro.fim %}
-                        iniciarCronometro({{ tarefa.id }}, "{{ registro.inicio|date:'Y-m-d H:i:s' }}");
-                        el.querySelector('.iniciar-btn')?.classList.add('d-none');
-                        el.querySelector('.pausar-btn')?.classList.remove('d-none');
-                        el.querySelector('.concluir-btn')?.classList.remove('d-none');
-    
-                    {% elif registro and registro.fim %}
-                        const inicio = new Date("{{ registro.inicio|date:'Y-m-d H:i:s' }}");
-                        const fim = new Date("{{ registro.fim|date:'Y-m-d H:i:s' }}");
-                        const diff = Math.floor((fim - inicio) / 1000);
-                        const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-                        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-                        const s = String(diff % 60).padStart(2, '0');
-                        cron.innerText = `⏱ ${h}:${m}:${s}`;
-    
-                        el.querySelector('.iniciar-btn')?.classList.add('d-none');
-                        el.querySelector('.reiniciar-btn')?.classList.remove('d-none');
-                        el.querySelector('.concluir-btn')?.classList.remove('d-none');
-                    {% endif %}
-                })();
-            {% endwith %}
-        {% endfor %}
-    });
-</script>
-    
+    </script>
 {% endblock %}

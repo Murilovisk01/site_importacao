@@ -23,12 +23,14 @@
             </select>
         </div>
         <div class="col">
-            <label>Status:</label>
-            <select name="status" class="form-select">
+            <label>Usuário:</label>
+            <select name="usuario" class="form-select">
                 <option value="">Todos</option>
-                <option value="inicial" {% if filtros.status == 'inicial' %}selected{% endif %}>Inicial</option>
-                <option value="andamento" {% if filtros.status == 'andamento' %}selected{% endif %}>Em andamento</option>
-                <option value="concluida" {% if filtros.status == 'concluida' %}selected{% endif %}>Concluída</option>
+                {% for user in usuarios %}
+                    <option value="{{ user.id }}" {% if filtros.usuario_id == user.id|stringformat:"s" %}selected{% endif %}>
+                        {{ user.username }}
+                    </option>
+                {% endfor %}
             </select>
         </div>
         <div class="col">
@@ -63,27 +65,62 @@
             </div>
         </div>
     </div>
-
+    <hr>
     <div class="mt-5">
         <h5>Tarefas por Tipo</h5>
         <canvas id="graficoTipo" height="120"></canvas>
     </div>
+    
+    <hr>
+    <h5>Tempo total registrado por Tipo de Tarefa</h5>
+    <ul class="list-group">
+        {% for tipo, duracao in tempo_por_tipo.items %}
+            <li class="list-group-item d-flex justify-content-between">
+                <span><strong>{{ tipo }}</strong></span>
+                <span>{{ duracao }}</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">Nenhum tempo registrado</li>
+        {% endfor %}
+    </ul>
+    <hr>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('graficoTipo').getContext('2d');
-    const chart = new Chart(ctx, {
+    const cores = {
+        inicial: 'rgba(108, 117, 125, 0.7)',    // cinza
+        andamento: 'rgba(255, 193, 7, 0.7)',    // amarelo
+        concluida: 'rgba(40, 167, 69, 0.7)'     // verde
+    };
+
+    // Gráfico por Tipo
+    const dadosTipo = {{ dados_grafico_tipo_status|safe }};
+    const tipos = Object.keys(dadosTipo);
+    const statusLabels = ['inicial', 'andamento', 'concluida'];
+
+    const datasetsTipo = statusLabels.map(status => ({
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        backgroundColor: cores[status],
+        data: tipos.map(tipo => dadosTipo[tipo][status] || 0),
+    }));
+
+    const ctxTipo = document.getElementById('graficoTipo').getContext('2d');
+    new Chart(ctxTipo, {
         type: 'bar',
         data: {
-            labels: [{% for item in tarefas_por_tipo %}'{{ item.tipo__nome }}',{% endfor %}],
-            datasets: [{
-                label: 'Quantidade de Tarefas',
-                data: [{% for item in tarefas_por_tipo %}{{ item.qtd }},{% endfor %}],
-                borderWidth: 1
-            }]
+            labels: tipos,
+            datasets: datasetsTipo
         },
         options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: {
+                    display: true,
+                    text: 'Tarefas por Tipo e Status'
+                }
+            },
             scales: {
                 y: {
                     beginAtZero: true,
@@ -93,4 +130,6 @@
         }
     });
 </script>
+
+
 {% endblock %}

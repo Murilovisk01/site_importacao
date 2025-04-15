@@ -122,3 +122,8 @@ class ImplantacaoForm(forms.ModelForm):
     class Meta:
         model = Implatacao
         fields = ['nome', 'cargo']
+
+class FiltroRegistroTempoForm(forms.Form):
+    data_inicio = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    data_fim = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    tarefa = forms.ModelChoiceField(queryset=Tarefa.objects.all(), required=False, empty_label="Todas as tarefas")

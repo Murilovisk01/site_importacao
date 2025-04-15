@@ -7,16 +7,18 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden, JsonResponse
-from django.db.models import Count,Q
+from django.db.models import Count,Q,Sum, F, ExpressionWrapper, DurationField
 from django.utils import timezone
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, make_aware
 from core.decorators import aprovado_required
 from django.forms import inlineformset_factory
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
 from .models import Implatacao, RegistroTempo, Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
+from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm,FiltroRegistroTempoForm
 from .forms import RegistroForm
+from datetime import datetime, timedelta
+from django.db.models import Count, Case, When, IntegerField
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -44,21 +46,12 @@ def tela_inicial(request):
 @login_required
 @aprovado_required
 def dashboard_kanban(request):
-    perfil = request.user.perfil
-
-    if not perfil.aprovado:
-        messages.error(request, "Você ainda não está em uma equipe aprovada.")
-        return redirect('logout')
-
-    
     membro_id = request.GET.get('membro')
     busca = request.GET.get('q')
 
     tarefas = Tarefa.objects.all()
-
     if membro_id:
         tarefas = tarefas.filter(atribuido_para__id=membro_id)
-
     if busca:
         tarefas = tarefas.filter(titulo__icontains=busca)
 
@@ -66,14 +59,33 @@ def dashboard_kanban(request):
     tarefas_andamento = tarefas.filter(status='andamento')
     tarefas_concluida = tarefas.filter(status='concluida')
 
+    acumulados = {}
+    registros_ativos = {}
 
+    for tarefa in tarefas:
+        total = tarefa.registros_tempo.filter(fim__isnull=False).aggregate(
+            total=Sum(ExpressionWrapper(F('fim') - F('inicio'), output_field=DurationField()))
+        )['total']
+        acumulados[tarefa.id] = int(total.total_seconds()) if total else 0
+
+        ativo = tarefa.registros_tempo.filter(fim__isnull=True).last()
+        if ativo:
+            registros_ativos[tarefa.id] = ativo.inicio.isoformat()
+
+    status_colunas = [
+        ('inicial', 'Inicial', tarefas_inicial),
+        ('andamento', 'Em andamento', tarefas_andamento),
+        ('concluida', 'Concluída', tarefas_concluida),
+    ]
     return render(request, 'core/dashboard_kanban.html', {
+        'status_colunas': status_colunas,
         'tarefas_inicial': tarefas_inicial,
         'tarefas_andamento': tarefas_andamento,
         'tarefas_concluida': tarefas_concluida,
-         'tarefas': tarefas_inicial | tarefas_andamento,
         'filtro_membro': int(membro_id) if membro_id else None,
         'busca': busca or '',
+        'acumulados': acumulados,
+        'registros_ativos': registros_ativos,
     })
 
 @login_required
@@ -278,22 +290,17 @@ def detalhes_tarefa(request, tarefa_id):
 def mover_tarefa(request, tarefa_id, novo_status):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
-    # Verifica se o usuário é o criador, o responsável OU é gerente
-    if (
-        request.user != tarefa.criado_por
-        and request.user != tarefa.atribuido_para
-        and not hasattr(request.user, 'perfil')
-        or not request.user.perfil.is_gerente
-    ):
-        messages.error(request, "Você não tem permissão para mover essa tarefa.")
-        return redirect('dashboard')
+    if novo_status == 'concluida':
+        # Verificar se há algum tempo registrado
+        has_tempo = tarefa.registros_tempo.filter(fim__isnull=False).exists()
 
-    # Verifica se o status é válido
-    if novo_status in ['inicial', 'andamento', 'concluida']:
-        tarefa.status = novo_status
-        tarefa.save()
-        messages.success(request, f"Tarefa movida para: {tarefa.get_status_display()}")
+        if not has_tempo:
+            messages.warning(request, '⚠️ Esta tarefa não pode ser concluída pois não possui tempo registrado.')
+            return redirect('dashboard')  # ou para detalhes da tarefa
 
+    tarefa.status = novo_status
+    tarefa.save()
+    messages.success(request, f'Tarefa movida para {novo_status}.')
     return redirect('dashboard')
 
 def registro_usuario(request):
@@ -438,15 +445,18 @@ def relatorio_equipe(request):
     data_fim = request.GET.get('data_fim')
     tipo_id = request.GET.get('tipo')
     status = request.GET.get('status')
+    usuario_id = request.GET.get('usuario')
 
     if data_inicio:
-        tarefas = tarefas.filter(criado_em__date__gte=data_inicio)
+        tarefas = tarefas.filter(data_criacao__date__gte=data_inicio)
     if data_fim:
-        tarefas = tarefas.filter(criado_em__date__lte=data_fim)
+        tarefas = tarefas.filter(data_criacao__date__lte=data_fim)
     if tipo_id:
         tarefas = tarefas.filter(tipo_id=tipo_id)
     if status:
         tarefas = tarefas.filter(status=status)
+    if usuario_id:
+        tarefas = tarefas.filter(atribuido_para_id=usuario_id)
 
     total = tarefas.count()
     concluidas = tarefas.filter(status='concluida').count()
@@ -455,18 +465,50 @@ def relatorio_equipe(request):
 
     tarefas_por_tipo = tarefas.values('tipo__nome').annotate(qtd=Count('id'))
 
+    # Agrupar por tipo e status
+    dados_grafico_tipo_status = defaultdict(lambda: {'inicial': 0, 'andamento': 0, 'concluida': 0})
+    for t in tarefas:
+        nome_tipo = t.tipo.nome if t.tipo else 'Sem tipo'
+        dados_grafico_tipo_status[nome_tipo][t.status] += 1
+
+    # Relatório de Tempo Registrado por Tipo
+    tempo_por_tipo = tarefas.values('tipo__nome').annotate(
+        tempo_total=Sum(
+            ExpressionWrapper(F('registros_tempo__fim') - F('registros_tempo__inicio'), output_field=DurationField())
+        )
+    )
+    
+    # Convertendo para texto legível
+    def formatar_timedelta(td):
+        if not td:
+            return "00:00:00"
+        total_segundos = int(td.total_seconds())
+        horas = total_segundos // 3600
+        minutos = (total_segundos % 3600) // 60
+        segundos = total_segundos % 60
+        return f"{horas:02}:{minutos:02}:{segundos:02}"
+    
+    tempo_formatado = {
+        item['tipo__nome'] or 'Sem tipo': formatar_timedelta(item['tempo_total'])
+        for item in tempo_por_tipo
+    }
+
     context = {
+        'tempo_por_tipo': tempo_formatado,
+        'dados_grafico_tipo_status': dict(dados_grafico_tipo_status),
         'total': total,
         'concluidas': concluidas,
         'andamento': andamento,
         'inicial': inicial,
         'tarefas_por_tipo': list(tarefas_por_tipo),
         'tipos': TipoTarefa.objects.all(),
+        'usuarios': User.objects.all(),
         'filtros': {
             'data_inicio': data_inicio,
             'data_fim': data_fim,
             'tipo_id': tipo_id,
             'status': status,
+            'usuario_id': usuario_id,
         }
     }
     return render(request, 'core/relatorio_equipe.html', context)
@@ -526,67 +568,69 @@ def excluir_implantador(request,implantador_id):
 @login_required
 @aprovado_required
 def iniciar_tempo(request, tarefa_id):
-    if request.method == 'POST':
-        tarefa = get_object_or_404(Tarefa, id=tarefa_id)
-
-        # Fecha outros registros abertos
-        RegistroTempo.objects.filter(usuario=request.user, fim__isnull=True).update(fim=timezone.now())
-
-        # Tempo acumulado anterior da tarefa por este usuário
-        registros = RegistroTempo.objects.filter(usuario=request.user, tarefa=tarefa, fim__isnull=False)
-        tempo_acumulado = sum([(r.fim - r.inicio).total_seconds() for r in registros], 0)
-
-        registro = RegistroTempo.objects.create(
-            usuario=request.user,
-            tarefa=tarefa,
-            inicio=timezone.now()
-        )
-
-        return JsonResponse({
-            'inicio': registro.inicio.isoformat(),
-            'acumulado': int(tempo_acumulado)
-        })
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+    # Finaliza qualquer registro anterior sem fim
+    RegistroTempo.objects.filter(tarefa=tarefa, usuario=request.user, fim__isnull=True).update(fim=timezone.now())
+    # Cria novo registro
+    inicio = timezone.now()
+    RegistroTempo.objects.create(tarefa=tarefa, usuario=request.user, inicio=inicio)
+    acumulado = tarefa.registros_tempo.filter(usuario=request.user, fim__isnull=False).aggregate(
+        total=Sum(ExpressionWrapper(F('fim') - F('inicio'), output_field=DurationField()))
+    )['total']
+    acumulado_segundos = int(acumulado.total_seconds()) if acumulado else 0
+    return JsonResponse({
+        'inicio': inicio.isoformat(),
+        'acumulado': acumulado_segundos,
+    })
 
 @csrf_exempt
 @login_required
 @aprovado_required
 def pausar_tempo(request, tarefa_id):
-    if request.method == 'POST':
-        RegistroTempo.objects.filter(
-            usuario=request.user, tarefa_id=tarefa_id, fim__isnull=True
-        ).update(fim=timezone.now())
-
-        return JsonResponse({'status': 'pausado'})
-
-@csrf_exempt
-@login_required
-@aprovado_required
-def concluir_tarefa(request, tarefa_id):
-    if request.method == 'POST':
-        tarefa = Tarefa.objects.get(id=tarefa_id)
-
-        # Pausa o tempo
-        RegistroTempo.objects.filter(usuario=request.user, tarefa=tarefa, fim__isnull=True).update(fim=timezone.now())
-
-        # Marca como concluída
-        tarefa.status = 'concluida'
-        tarefa.save()
-
-        return JsonResponse({'status': 'concluida'})
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+    registro = tarefa.registros_tempo.filter(usuario=request.user, fim__isnull=True).last()
+    if registro:
+        registro.fim = timezone.now()
+        registro.save()
+    return JsonResponse({'status': 'ok'})
 
 @login_required
 @aprovado_required
 def meu_relatorio_tempo(request):
-    registros_raw = RegistroTempo.objects.filter(usuario=request.user).select_related('tarefa').order_by('-inicio')
+    registros = RegistroTempo.objects.filter(usuario=request.user).select_related('tarefa')
 
+    # Filtros
+    tarefa_query = request.GET.get('tarefa', '')
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+
+    # Mês atual por padrão
+    if not data_inicio or not data_fim:
+        hoje = timezone.now().date()
+        primeiro_dia = hoje.replace(day=1)
+        data_inicio = data_inicio or primeiro_dia.isoformat()
+        data_fim = data_fim or hoje.isoformat()
+
+    registros = registros.filter(inicio__date__gte=data_inicio, inicio__date__lte=data_fim)
+
+    if tarefa_query:
+        registros = registros.filter(tarefa__titulo__icontains=tarefa_query)
+
+    registros = registros.order_by('-inicio')
+
+    # Agrupar por dia
     registros_por_dia = defaultdict(list)
-    for reg in registros_raw:
-        data_chave = localtime(reg.inicio).date()
-        registros_por_dia[data_chave].append(reg)
+    for r in registros:
+        data_local = localtime(r.inicio).date()
+        registros_por_dia[data_local].append(r)
 
-    # ordena as datas decrescente
     registros_ordenados = dict(sorted(registros_por_dia.items(), reverse=True))
 
     return render(request, 'core/relatorio_individual.html', {
-        'registros_por_dia': registros_ordenados
+        'registros_por_dia': registros_ordenados,
+        'filtros': {
+            'tarefa': tarefa_query,
+            'data_inicio': data_inicio,
+            'data_fim': data_fim,
+        }
     })

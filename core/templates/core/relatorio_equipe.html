@@ -84,6 +84,11 @@
         {% endfor %}
     </ul>
     <hr>
+    <div class="mt-5">
+    <h5 class="mt-5">Tarefas por Sistema</h5>
+    <canvas id="graficoSistema" height="100"></canvas>
+    </div>
+    <hr>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -119,6 +124,39 @@
                 title: {
                     display: true,
                     text: 'Tarefas por Tipo e Status'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    precision: 0
+                }
+            }
+        }
+    });
+</script>
+<script>
+    const sistemas = [{% for item in tarefas_por_sistema %}'{{ item.sistema__nome|default:"Sem sistema" }}',{% endfor %}];
+    const qtdSistemas = [{% for item in tarefas_por_sistema %}{{ item.qtd }},{% endfor %}];
+
+    const ctxSistema = document.getElementById('graficoSistema').getContext('2d');
+    new Chart(ctxSistema, {
+        type: 'bar',
+        data: {
+            labels: sistemas,
+            datasets: [{
+                label: 'Quantidade de Tarefas',
+                data: qtdSistemas,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Tarefas por Sistema'
                 }
             },
             scales: {

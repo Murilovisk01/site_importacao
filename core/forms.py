@@ -1,9 +1,10 @@
 from django import forms
-from .models import Comentario, Implatacao, TipoTarefa, Sistema, Tarefa
+from .models import Comentario, Implatacao, RegistroTempo, TipoTarefa, Sistema, Tarefa
 from django.contrib.auth.models import User
 from django.forms.widgets import DateInput
 from django.forms import inlineformset_factory
 from django.contrib.auth.forms import PasswordChangeForm
+from dal import autocomplete
 
 class TipoTarefaForm(forms.ModelForm):
     class Meta:
@@ -127,3 +128,16 @@ class FiltroRegistroTempoForm(forms.Form):
     data_inicio = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
     data_fim = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
     tarefa = forms.ModelChoiceField(queryset=Tarefa.objects.all(), required=False, empty_label="Todas as tarefas")
+
+class RegistroTempoForm(forms.ModelForm):
+    class Meta:
+        model = RegistroTempo
+        fields = ['tarefa', 'inicio', 'fim']
+        widgets = {
+            'tarefa': autocomplete.ModelSelect2(
+                url='tarefa-autocomplete',
+                attrs={'data-placeholder': 'Buscar tarefa...', 'class': 'form-control'}  # <-- aqui o ajuste
+            ),
+            'inicio': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'fim': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+        }

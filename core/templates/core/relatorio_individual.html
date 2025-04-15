@@ -21,34 +21,37 @@
     <div class="col-md-2">
       <button type="submit" class="btn btn-primary w-100">Filtrar</button>
     </div>
-  </form>
-  
-  {% for data, registros in registros_por_dia.items %}
-  <h5 class="text-muted mt-4 mb-3">📅 {{ data|date:"d/m/Y" }}</h5>
-  {% for registro in registros %}
-      <div class="card mb-3 shadow-sm">
-          <div class="card-body">
-              <h5 class="card-title">{{ registro.tarefa.titulo }}</h5>
-              <p><strong>Sistema:</strong> {{ registro.tarefa.sistema }} - <strong>Tipo:</strong> {{ registro.tarefa.tipo }}</p>
-              <p><strong>Início:</strong> {{ registro.inicio|date:"d/m/Y H:i" }}</p>
-              <p><strong>Fim:</strong>
-                  {% if registro.fim %}
-                      {{ registro.fim|date:"d/m/Y H:i" }}
-                  {% else %}
-                      <span class="text-warning">Em andamento...</span>
-                  {% endif %}
-              </p>
-              <p><strong>Duração:</strong>
-                  {% if registro.fim %}
-                      {{ registro.duracao }}
-                  {% else %}
-                      <span class="text-warning">Em andamento...</span>
-                  {% endif %}
-              </p>
-              <p><strong>Status da Tarefa:</strong> {{ registro.tarefa.get_status_display }}</p>
-          </div>
-      </div>
-  {% endfor %}
+</form>
+<div class="me-3 d-flex align-items-center">    
+    <a href="{% url 'tempo_manual' %}" class="btn btn-outline-dark">Adicinar Manual</a>
+</div>
+<hr>
+{% for data, registros in registros_por_dia.items %}
+    <h5 class="text-muted mt-4 mb-3">📅 {{ data|date:"d/m/Y" }}</h5>
+    {% for registro in registros %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ registro.tarefa.titulo }}</h5>
+                <p><strong>Sistema:</strong> {{ registro.tarefa.sistema }} - <strong>Tipo:</strong> {{ registro.tarefa.tipo }}</p>
+                <p><strong>Início:</strong> {{ registro.inicio|date:"d/m/Y H:i" }}</p>
+                <p><strong>Fim:</strong>
+                    {% if registro.fim %}
+                        {{ registro.fim|date:"d/m/Y H:i" }}
+                    {% else %}
+                        <span class="text-warning">Em andamento...</span>
+                    {% endif %}
+                </p>
+                <p><strong>Duração:</strong>
+                    {% if registro.fim %}
+                        {{ registro.duracao }}
+                    {% else %}
+                        <span class="text-warning">Em andamento...</span>
+                    {% endif %}
+                </p>
+                <p><strong>Status da Tarefa:</strong> {{ registro.tarefa.get_status_display }}</p>
+            </div>
+        </div>
+    {% endfor %}
 {% endfor %}
 
 {% endblock %}

@@ -56,7 +56,7 @@ class Tarefa(models.Model):
 
 
     def __str__(self):
-        return self.titulo
+        return f"{self.titulo} | {self.tipo} | {self.atribuido_para}"
 
 class Perfil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

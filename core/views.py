@@ -15,10 +15,11 @@ from django.forms import inlineformset_factory
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
 from .models import Implatacao, RegistroTempo, Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm,FiltroRegistroTempoForm
+from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm,FiltroRegistroTempoForm
 from .forms import RegistroForm
 from datetime import datetime, timedelta
 from django.db.models import Count, Case, When, IntegerField
+from dal import autocomplete
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -48,10 +49,15 @@ def tela_inicial(request):
 def dashboard_kanban(request):
     membro_id = request.GET.get('membro')
     busca = request.GET.get('q')
+    atribuidas = request.GET.get('atribuidas')
 
     tarefas = Tarefa.objects.all()
-    if membro_id:
+
+    if atribuidas == '1':  
+        tarefas = tarefas.filter(atribuido_para=request.user)
+    elif membro_id:
         tarefas = tarefas.filter(atribuido_para__id=membro_id)
+
     if busca:
         tarefas = tarefas.filter(titulo__icontains=busca)
 
@@ -86,6 +92,7 @@ def dashboard_kanban(request):
         'busca': busca or '',
         'acumulados': acumulados,
         'registros_ativos': registros_ativos,
+        'atribuidas': atribuidas,
     })
 
 @login_required
@@ -477,7 +484,7 @@ def relatorio_equipe(request):
             ExpressionWrapper(F('registros_tempo__fim') - F('registros_tempo__inicio'), output_field=DurationField())
         )
     )
-    
+
     # Convertendo para texto legível
     def formatar_timedelta(td):
         if not td:
@@ -493,7 +500,10 @@ def relatorio_equipe(request):
         for item in tempo_por_tipo
     }
 
+    tarefas_por_sistema = tarefas.values('sistema__nome').annotate(qtd=Count('id')).order_by('sistema__nome')
+
     context = {
+        'tarefas_por_sistema':list(tarefas_por_sistema),
         'tempo_por_tipo': tempo_formatado,
         'dados_grafico_tipo_status': dict(dados_grafico_tipo_status),
         'total': total,
@@ -634,3 +644,32 @@ def meu_relatorio_tempo(request):
             'data_fim': data_fim,
         }
     })
+
+@login_required
+@aprovado_required
+def registrar_tempo_manual(request):
+    if request.method == 'POST':
+        form = RegistroTempoForm(request.POST)
+        if form.is_valid():
+            registro = form.save(commit=False)
+            registro.usuario = request.user
+            registro.save()
+            return redirect('meu_relatorio_tempo')  # ou onde desejar
+    else:
+        form = RegistroTempoForm()
+    return render(request, 'core/registro_tempo_form.html', {'form': form})
+
+class TarefaAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Tarefa.objects.none()
+
+        qs = Tarefa.objects.all()
+
+        if self.q:
+            qs = qs.filter(
+                Q(titulo__icontains=self.q) |
+                Q(tipo__nome__icontains=self.q) |
+                Q(atribuido_para__username__icontains=self.q)
+            )
+        return qs

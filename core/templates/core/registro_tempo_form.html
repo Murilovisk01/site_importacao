@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Adicionar Tempo Manual{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Adicionar Tempo Manual</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_tarefa">Tarefa</label>
+            {{ form.tarefa|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            <label for="id_inicio">Início</label>
+            {{ form.inicio|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            <label for="id_fim">Fim</label>
+            {{ form.fim|add_class:"form-control" }}
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  {{ block.super }}
+  {{ form.media }}
+{% endblock %}

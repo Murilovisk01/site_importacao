@@ -53,6 +53,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'django.contrib.humanize',
+    'dal',
+    'dal_select2',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [

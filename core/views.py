@@ -551,7 +551,7 @@ def criar_implantador(request):
 @aprovado_required
 def listar_implantador(request):
     implantadores = Implatacao.objects.all()
-    return render(request, 'core/listar_implantador.html', {'implantadores': implantadores})
+    return render(request, 'core/tela_implantacao/listar_implantador.html', {'implantadores': implantadores})
 
 @login_required
 @aprovado_required
@@ -711,6 +711,7 @@ class TarefaAutocomplete(autocomplete.Select2QuerySetView):
             )
         return qs
 
+# Tela de Script, função de criar tipo, script, edição e exclusão
 @login_required
 @aprovado_required
 def criar_tipo_script(request):
@@ -722,7 +723,7 @@ def criar_tipo_script(request):
     else:
         form = TipoScriptForm()
     
-    return render(request, 'core/tipo_script_form.html', {'form': form})
+    return render(request, 'core/tela_scripts/tipo_script_form.html', {'form': form})
 
 @login_required
 @aprovado_required
@@ -733,7 +734,7 @@ def criar_script(request):
         script.autor = request.user
         script.save()
         return redirect('listar_scripts')  # redirecione para uma listagem
-    return render(request, 'core/script_form.html', {'form': form, 'modo': 'criar'})
+    return render(request, 'core/tela_scripts/script_form.html', {'form': form, 'modo': 'criar'})
 
 @login_required
 @aprovado_required
@@ -743,7 +744,7 @@ def editar_script(request, pk):
     if request.method == 'POST' and form.is_valid():
         form.save()
         return redirect('listar_scripts')
-    return render(request, 'core/script_form.html', {'form': form, 'modo': 'editar'})
+    return render(request, 'core/tela_scripts/script_form.html', {'form': form, 'modo': 'editar'})
 
 @login_required
 @aprovado_required
@@ -764,7 +765,7 @@ def listar_scripts(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)   
 
-    return render(request, 'core/lista_scripts.html', {
+    return render(request, 'core/tela_scripts/lista_scripts.html', {
         'scripts': scripts,
         'busca': busca,
         'page_obj': page_obj,
@@ -774,7 +775,7 @@ def listar_scripts(request):
 @aprovado_required
 def detalhes_script(request, pk):
     script = get_object_or_404(ScriptSQL, pk=pk)
-    return render(request, 'core/script_detalhes.html', {'script': script})
+    return render(request, 'core/tela_scripts/script_detalhes.html', {'script': script})
 
 @login_required
 @aprovado_required

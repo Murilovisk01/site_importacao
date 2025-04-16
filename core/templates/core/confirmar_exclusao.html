@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="col-md-6 offset-md-3">
-    <h2 class="mb-4">Excluir Tarefa</h2>
-    <p>Tem certeza que deseja excluir a tarefa <strong>{{ tarefa.titulo }}</strong>?</p>
+    <h2 class="mb-4">Excluir</h2>
+    <p>Tem certeza que deseja excluir <strong>{{ tarefa.titulo }}</strong>?</p>
 
     <form method="post">
         {% csrf_token %}

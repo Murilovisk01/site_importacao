@@ -9,7 +9,7 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Count,Q,Sum, F, ExpressionWrapper, DurationField
 from django.utils import timezone
-from django.utils.timezone import localtime, make_aware
+from django.utils.timezone import localtime, make_aware,now
 from core.decorators import aprovado_required
 from django.forms import inlineformset_factory
 from django.views.decorators.csrf import csrf_exempt
@@ -451,8 +451,8 @@ def remover_membro(request, perfil_id):
     messages.success(request, f"{nome_usuario} foi desativado.")
     return redirect('painel_equipe')
 
-@login_required
 @aprovado_required
+@login_required
 def relatorio_equipe(request):
     tarefas = Tarefa.objects.all()
 
@@ -462,10 +462,14 @@ def relatorio_equipe(request):
     status = request.GET.get('status')
     usuario_id = request.GET.get('usuario')
 
-    if data_inicio:
-        tarefas = tarefas.filter(data_criacao__date__gte=data_inicio)
-    if data_fim:
-        tarefas = tarefas.filter(data_criacao__date__lte=data_fim)
+    hoje = now().date()
+    if not data_inicio:
+        data_inicio = hoje.replace(day=1).isoformat()
+    if not data_fim:
+        data_fim = hoje.isoformat()
+
+    tarefas = tarefas.filter(data_criacao__date__gte=data_inicio, data_criacao__date__lte=data_fim)
+
     if tipo_id:
         tarefas = tarefas.filter(tipo_id=tipo_id)
     if status:
@@ -486,14 +490,21 @@ def relatorio_equipe(request):
         nome_tipo = t.tipo.nome if t.tipo else 'Sem tipo'
         dados_grafico_tipo_status[nome_tipo][t.status] += 1
 
-    # Relatório de Tempo Registrado por Tipo
-    tempo_por_tipo = tarefas.values('tipo__nome').annotate(
-        tempo_total=Sum(
-            ExpressionWrapper(F('registros_tempo__fim') - F('registros_tempo__inicio'), output_field=DurationField())
+    # Tempo por tipo — filtrando registros_tempo pelo usuário se houver filtro
+    if usuario_id:
+        tempo_por_tipo = tarefas.filter(registros_tempo__usuario_id=usuario_id).values('tipo__nome').annotate(
+            tempo_total=Sum(
+                ExpressionWrapper(F('registros_tempo__fim') - F('registros_tempo__inicio'), output_field=DurationField())
+            )
         )
-    )
+    else:
+        tempo_por_tipo = tarefas.values('tipo__nome').annotate(
+            tempo_total=Sum(
+                ExpressionWrapper(F('registros_tempo__fim') - F('registros_tempo__inicio'), output_field=DurationField())
+            )
+        )
 
-    # Convertendo para texto legível
+    # Converter para texto legível
     def formatar_timedelta(td):
         if not td:
             return "00:00:00"
@@ -502,7 +513,7 @@ def relatorio_equipe(request):
         minutos = (total_segundos % 3600) // 60
         segundos = total_segundos % 60
         return f"{horas:02}:{minutos:02}:{segundos:02}"
-    
+
     tempo_formatado = {
         item['tipo__nome'] or 'Sem tipo': formatar_timedelta(item['tempo_total'])
         for item in tempo_por_tipo
@@ -511,7 +522,7 @@ def relatorio_equipe(request):
     tarefas_por_sistema = tarefas.values('sistema__nome').annotate(qtd=Count('id')).order_by('sistema__nome')
 
     context = {
-        'tarefas_por_sistema':list(tarefas_por_sistema),
+        'tarefas_por_sistema': list(tarefas_por_sistema),
         'tempo_por_tipo': tempo_formatado,
         'dados_grafico_tipo_status': dict(dados_grafico_tipo_status),
         'total': total,
@@ -529,8 +540,10 @@ def relatorio_equipe(request):
             'usuario_id': usuario_id,
         }
     }
+
     return render(request, 'core/relatorio_equipe.html', context)
 
+# Tela de implantação, função de inicar, pausar e editar os registros da implantação
 @login_required
 @aprovado_required
 def criar_implantador(request):
@@ -584,6 +597,7 @@ def excluir_implantador(request,implantador_id):
     
     return render(request,'core/confirmar_exclusao.html',{'implantador':implantador})
 
+# Tela de registro de tempo, função de inicar, pausar e editar o tempo da tarefa
 @csrf_exempt
 @login_required
 @aprovado_required

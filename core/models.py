@@ -104,3 +104,18 @@ def criar_ou_atualizar_perfil(sender, instance, created, **kwargs):
     else:
         instance.perfil.save()
 
+class TipoScript(models.Model):
+    nome = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nome
+
+class ScriptSQL(models.Model):
+    tipo = models.ForeignKey(TipoScript, on_delete=models.SET_NULL, null=True, blank=True)
+    titulo = models.CharField(max_length=200)
+    sql = models.TextField()
+    autor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='scripts_criados')
+    ultima_edicao = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.titulo

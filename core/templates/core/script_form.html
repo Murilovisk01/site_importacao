@@ -1,0 +1,34 @@
+
+{% extends 'core/base.html' %}
+{% block content %}
+{% load widget_tweaks %}
+<div class="container mt-4">
+    <h3>{{ modo|title }} Script SQL</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3 d-flex align-items-end">
+            <div class="flex-grow-1 me-2">
+              <label for="id_tipo">Tipo de Script</label>
+              {{ form.tipo|add_class:"form-select" }}
+            </div>
+            <div>
+              <label class="invisible d-block">+</label>
+              <a href="{% url 'criar_tipo_script' %}" class="btn btn-outline-success" title="Adicionar novo tipo">
+                <strong>+</strong>
+              </a>
+            </div>
+          </div>
+          
+        <div class="mb-3">
+            <label for="id_titulo">Título</label>
+            {{ form.titulo }}
+        </div>
+        <div class="mb-3">
+            <label for="id_sql">Script SQL</label>
+            {{ form.sql }}
+        </div>
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{% url 'listar_scripts' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

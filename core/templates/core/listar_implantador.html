@@ -7,11 +7,12 @@
     <a href="{% url 'criar_implantador' %}" class="btn btn-primary">+ Criar novo</a>
 </div>
 
-{% if implantador %}
+{% if implantadores %}
 <table class="table table-bordered table-stripe">
     <thead class="table-light">
         <tr>
             <th>Nome</th>
+            <th>Cargo</th>
             <th class="text-end">Ações</th>
         </tr>
     </thead>
@@ -19,11 +20,12 @@
         {% for implantador in implantadores %}
         <tr>
             <td>{{ implantador.nome }}</td>
+            <td>{{ implantador.cargo }}</td>
             <td class="text-end">
                 <a href="{% url 'editar_implatador' implantador.id %}" class="btn btn-sm btn-outline-info mt-2">Editar</a>
-                {%if user == implantador.criado_por%}
+                {% if user == implantador.criado_por %}
                     <a href="{% url 'excluir_implantador' implantador.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
-                {%endif%}    
+                {% endif %}
             </td>
         </tr>
         {% endfor %}

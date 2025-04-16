@@ -14,12 +14,13 @@ from core.decorators import aprovado_required
 from django.forms import inlineformset_factory
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
-from .models import Implatacao, RegistroTempo, Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm,FiltroRegistroTempoForm
+from .models import Implatacao, RegistroTempo, ScriptSQL, Tarefa, Sistema, TipoScript, TipoTarefa, Perfil
+from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, ScriptSQLForm, TipoScriptForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm,FiltroRegistroTempoForm
 from .forms import RegistroForm
 from datetime import datetime, timedelta
 from django.db.models import Count, Case, When, IntegerField
 from dal import autocomplete
+from django.core.paginator import Paginator
 
 class CustomLoginView(LoginView):
     template_name = 'core/login.html'
@@ -79,10 +80,11 @@ def dashboard_kanban(request):
             registros_ativos[tarefa.id] = ativo.inicio.isoformat()
 
     status_colunas = [
-        ('inicial', 'Inicial', tarefas_inicial),
-        ('andamento', 'Em andamento', tarefas_andamento),
-        ('concluida', 'Concluída', tarefas_concluida),
+        ('inicial', 'Inicial', tarefas_inicial, 'secondary'),
+        ('andamento', 'Em andamento', tarefas_andamento, 'warning'),
+        ('concluida', 'Concluída', tarefas_concluida, 'success'),
     ]
+    
     return render(request, 'core/dashboard_kanban.html', {
         'status_colunas': status_colunas,
         'tarefas_inicial': tarefas_inicial,
@@ -636,9 +638,14 @@ def meu_relatorio_tempo(request):
 
     registros = registros.order_by('-inicio')
 
-    # Agrupar por dia
+    # Paginação
+    paginator = Paginator(registros, 10)  # 10 registros por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Agrupar os itens da página atual por dia
     registros_por_dia = defaultdict(list)
-    for r in registros:
+    for r in page_obj.object_list:
         data_local = localtime(r.inicio).date()
         registros_por_dia[data_local].append(r)
 
@@ -646,6 +653,7 @@ def meu_relatorio_tempo(request):
 
     return render(request, 'core/relatorio_individual.html', {
         'registros_por_dia': registros_ordenados,
+        'page_obj': page_obj,
         'filtros': {
             'tarefa': tarefa_query,
             'data_inicio': data_inicio,
@@ -702,3 +710,77 @@ class TarefaAutocomplete(autocomplete.Select2QuerySetView):
                 Q(atribuido_para__username__icontains=self.q)
             )
         return qs
+
+@login_required
+@aprovado_required
+def criar_tipo_script(request):
+    if request.method == 'POST':
+        form = TipoScriptForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('criar_script')  # ou onde quiser voltar
+    else:
+        form = TipoScriptForm()
+    
+    return render(request, 'core/tipo_script_form.html', {'form': form})
+
+@login_required
+@aprovado_required
+def criar_script(request):
+    form = ScriptSQLForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        script = form.save(commit=False)
+        script.autor = request.user
+        script.save()
+        return redirect('listar_scripts')  # redirecione para uma listagem
+    return render(request, 'core/script_form.html', {'form': form, 'modo': 'criar'})
+
+@login_required
+@aprovado_required
+def editar_script(request, pk):
+    script = get_object_or_404(ScriptSQL, pk=pk)
+    form = ScriptSQLForm(request.POST or None, instance=script)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('listar_scripts')
+    return render(request, 'core/script_form.html', {'form': form, 'modo': 'editar'})
+
+@login_required
+@aprovado_required
+def listar_scripts(request):
+    busca = request.GET.get('q')
+    scripts = ScriptSQL.objects.all()
+
+    if busca:
+        scripts = scripts.filter(
+            Q(titulo__icontains=busca) |
+            Q(tipo__nome__icontains=busca) |
+            Q(sql__icontains=busca)
+        )
+
+    scripts = scripts.order_by('-ultima_edicao')
+
+    paginator = Paginator(scripts, 20)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)   
+
+    return render(request, 'core/lista_scripts.html', {
+        'scripts': scripts,
+        'busca': busca,
+        'page_obj': page_obj,
+    })
+
+@login_required
+@aprovado_required
+def detalhes_script(request, pk):
+    script = get_object_or_404(ScriptSQL, pk=pk)
+    return render(request, 'core/script_detalhes.html', {'script': script})
+
+@login_required
+@aprovado_required
+def excluir_script(request, pk):
+    script = get_object_or_404(ScriptSQL, pk=pk)
+    if request.method == 'POST':
+        script.delete()
+        return redirect('listar_scripts')  # ajuste esse nome se seu nome da URL for diferente
+    return render(request, 'core/confirmar_exclusao.html', {'script': script})

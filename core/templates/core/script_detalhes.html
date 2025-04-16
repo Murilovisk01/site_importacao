@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+{% block title %}Detalhes do Script{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>{{ script.titulo }}</h3>
+  <p><strong>Tipo:</strong> {{ script.tipo }}</p>
+  <p><strong>Autor:</strong> {{ script.autor }}</p>
+  <p><strong>Última edição:</strong> {{ script.ultima_edicao }}</p>
+  <hr>
+  <pre class="bg-light p-3 border rounded">{{ script.sql }}</pre>
+
+  <a href="{% url 'editar_script' script.id %}" class="btn btn-warning">✏️ Editar</a>
+  <a href="{% url 'listar_scripts' %}" class="btn btn-secondary ms-2">Voltar</a>
+</div>
+<hr>
+{% endblock %}

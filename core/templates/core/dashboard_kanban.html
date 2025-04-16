@@ -21,8 +21,9 @@
   </div>
   
 
-<div class="row">
-    {% for status, titulo, tarefas in status_colunas %}
+  <div class="row" style="display: flex;">
+
+    {% for status, titulo, tarefas, cor in status_colunas %}
     <div class="col-md-4" style="max-height: 75vh; overflow-y: auto;">
         <h4 class="text-center text-{{ cor }}">{{ titulo }}</h4>
         {% for tarefa in tarefas %}
@@ -49,7 +50,6 @@
                 {% if tarefa.status != 'inicial' %}<a href="{% url 'mover_tarefa' tarefa.id 'inicial' %}" class="btn btn-sm btn-outline-secondary mt-2 ms-1">← Inicial</a>{% endif %}
                 {% if tarefa.status != 'andamento' %}<a href="{% url 'mover_tarefa' tarefa.id 'andamento' %}" class="btn btn-sm btn-outline-warning mt-2 ms-1">↔ Andamento</a>{% endif %}
                 {% if tarefa.status != 'concluida' %}<a href="{% url 'mover_tarefa' tarefa.id 'concluida' %}" class="btn btn-sm btn-outline-success mt-2 ms-1">→ Concluída</a>{% endif %}
-                {% if user == tarefa.criado_por %}<a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>{% endif %}
             </div>
         </div>
         {% empty %}<p class="text-muted">Sem tarefas</p>{% endfor %}

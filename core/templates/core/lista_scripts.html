@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Scripts SQL</h3>
+        <a href="{% url 'criar_script' %}" class="btn btn-success">+ Novo Script</a>
+    </div>
+
+    <form method="get" class="mb-4 row g-2">
+        <div class="col-md-10">
+            <input type="text" name="q" value="{{ busca|default_if_none:'' }}" class="form-control" placeholder="Buscar por tipo, título ou SQL...">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-primary w-100">🔍 Buscar</button>
+        </div>
+    </form>
+    
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Autor</th>
+                <th>Última Edição</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for script in page_obj %}
+                <tr>
+                    <td>{{ script.titulo }}</td>
+                    <td>{{ script.tipo.nome }}</td>
+                    <td>{{ script.autor.get_full_name|default:script.autor.username }}</td>
+                    <td>{{ script.ultima_edicao|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'detalhes_script' script.id %}" class="btn btn-sm btn-outline-info">🔍 Detalhes</a>
+                        <a href="{% url 'excluir_script' script.id %}" class="btn btn-sm btn-outline-danger">🗑️ Excluir</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-muted text-center">Nenhum script encontrado</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<nav>
+    <ul class="pagination justify-content-center mt-4">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?q={{ busca|default_if_none:'' }}&page=1">« Primeira</a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?q={{ busca|default_if_none:'' }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+        </li>
+      {% endif %}
+  
+      <li class="page-item disabled">
+        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      </li>
+  
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?q={{ busca|default_if_none:'' }}&page={{ page_obj.next_page_number }}">Próxima ›</a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?q={{ busca|default_if_none:'' }}&page={{ page_obj.paginator.num_pages }}">Última »</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+  
+{% endblock %}

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Comentario, Implatacao, RegistroTempo, TipoTarefa, Sistema, Tarefa
+from .models import Comentario, Implatacao, RegistroTempo, ScriptSQL, TipoScript, TipoTarefa, Sistema, Tarefa
 from django.contrib.auth.models import User
 from django.forms.widgets import DateInput
 from django.forms import inlineformset_factory
@@ -152,3 +152,21 @@ class RegistroTempoForm(forms.ModelForm):
         for campo in ['inicio', 'fim']:
             if self.instance.pk and getattr(self.instance, campo):
                 self.fields[campo].initial = getattr(self.instance, campo).strftime('%Y-%m-%dT%H:%M')
+
+class ScriptSQLForm(forms.ModelForm):
+    class Meta:
+        model = ScriptSQL
+        fields = ['tipo', 'titulo', 'sql']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'sql': forms.Textarea(attrs={'class': 'form-control', 'rows': 10}),
+        }
+
+class TipoScriptForm(forms.ModelForm):
+    class Meta:
+        model = TipoScript
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+        }

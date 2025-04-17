@@ -1,0 +1,27 @@
+{% extends 'core/base.html' %}
+{% load form_filters %}
+
+{% block title %}Adicionar Tempo Externo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Adicionar Tempo Externo à Tarefa: <strong>{{ tarefa.titulo }}</strong></h2>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            {{ form.sistema.label_tag }}
+            {{ form.sistema|add_class:"form-control" }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.tempo_corrido.label_tag }}
+            {{ form.tempo_corrido }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-secondary ms-2">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

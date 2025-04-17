@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, TarefaAutocomplete, aprovar_membro, criar_implantador, criar_script, criar_sistema, criar_sistema_externo, criar_tarefa, criar_tipo_script, criar_tipo_tarefa, dashboard_kanban, detalhes_script, detalhes_tarefa, editar_implatador, editar_registro_tempo, editar_script, editar_sistema, editar_sistema_externo, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_script, excluir_sistema, excluir_sistema_externo, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_scripts, listar_sistemas, listar_sistemas_externo, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registrar_tempo_manual, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, TarefaAutocomplete, adicionar_tempo_externo, aprovar_membro, criar_implantador, criar_sistema, criar_sistema_externo, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_registro_tempo, editar_sistema, editar_sistema_externo, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_sistema_externo, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_sistemas_externo, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registrar_tempo_manual, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -52,16 +52,12 @@ urlpatterns = [
     path('meu-relatorio-tempo/', meu_relatorio_tempo, name='meu_relatorio_tempo'),
     path('tarefa-autocomplete/', TarefaAutocomplete.as_view(), name='tarefa-autocomplete'),
 
-    path('scripts/', listar_scripts, name='listar_scripts'),
-    path('scripts/novo/', criar_script, name='criar_script'),
-    path('scripts/<int:pk>/editar/', editar_script, name='editar_script'),
-    path('scripts/tipo/novo/', criar_tipo_script, name='criar_tipo_script'),
-    path('scripts/<int:pk>/', detalhes_script, name='detalhes_script'),
-    path('scripts/<int:pk>/excluir/', excluir_script, name='excluir_script'),
-
     path('sistema_externo/novo/', criar_sistema_externo, name='criar_sistema_externo'),
     path('sistema_externo/', listar_sistemas_externo, name='listar_sistemas_externo'),
     path('sistema_externo/<int:pk>/excluir/', excluir_sistema_externo, name='excluir_sistema_externo'),
     path('sistema_externo/<int:pk>/editar/', editar_sistema_externo, name='editar_sistema_externo'),
+
+    path('tarefa/<int:tarefa_id>/tempo-externo/', adicionar_tempo_externo, name='adicionar_tempo_externo'),
+
 
 ]

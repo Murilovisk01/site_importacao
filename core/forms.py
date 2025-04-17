@@ -1,11 +1,12 @@
 from django import forms
-from .models import Comentario, Implatacao, RegistroTempo, ScriptSQL, SistemaExterno, TempoSistemaExterno, TipoScript, TipoTarefa, Sistema, Tarefa
+from .models import Comentario, Implatacao, RegistroTempo, SistemaExterno, TempoSistemaExterno, TipoTarefa, Sistema, Tarefa
 from django.contrib.auth.models import User
 from django.forms.widgets import DateInput
 from django.forms import inlineformset_factory
 from django.contrib.auth.forms import PasswordChangeForm
 from dal import autocomplete
 from django.forms import modelformset_factory
+from datetime import timedelta
 
 class TipoTarefaForm(forms.ModelForm):
     class Meta:
@@ -158,24 +159,6 @@ class RegistroTempoForm(forms.ModelForm):
             if self.instance.pk and getattr(self.instance, campo):
                 self.fields[campo].initial = getattr(self.instance, campo).strftime('%Y-%m-%dT%H:%M')
 
-class ScriptSQLForm(forms.ModelForm):
-    class Meta:
-        model = ScriptSQL
-        fields = ['tipo', 'titulo', 'sql']
-        widgets = {
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
-            'sql': forms.Textarea(attrs={'class': 'form-control', 'rows': 10}),
-        }
-
-class TipoScriptForm(forms.ModelForm):
-    class Meta:
-        model = TipoScript
-        fields = ['nome']
-        widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-
 class SistemaExternoForm(forms.ModelForm):
     class Meta:
         model = SistemaExterno
@@ -185,12 +168,19 @@ class SistemaExternoForm(forms.ModelForm):
         }
 
 class TempoSistemaExternoForm(forms.ModelForm):
+    tempo_corrido = forms.CharField(
+        label="Tempo Gasto (hh:mm)",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ex: 01:30'})
+    )
+
     class Meta:
         model = TempoSistemaExterno
         fields = ['sistema', 'tempo_corrido']
-        widgets = {
-            'tempo_corrido': forms.TimeInput(format='%H:%M', attrs={'type': 'time'}),
-        }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['sistema'].queryset = SistemaExterno.objects.all()
+
+    def clean_tempo_corrido(self):
+        data = self.cleaned_data['tempo_corrido']
+        try:
+            horas, minutos = map(int, data.split(':'))
+            return timedelta(hours=horas, minutes=minutos)
+        except:
+            raise forms.ValidationError("Informe o tempo no formato hh:mm (ex: 01:30)")

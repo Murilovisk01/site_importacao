@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load markdown_decorator %}
+{% load duration_filters %}
 {% block title %}Detalhes da Tarefa{% endblock %}
 
 {% block content %}
@@ -23,7 +24,7 @@
             {{ tarefa.documentacao|urlize|linebreaksbr }}
         </div>
         <hr>
-        <h5><strong>Tempo:</strong></h5>
+        <h5><strong>Tempo Geral:</strong></h5>
         {% if tempo_total != "0:00:00" %}
             <div class="alert alert-info">
                 <strong>Tempo total gasto:</strong> {{ tempo_total }}
@@ -34,19 +35,32 @@
             </div>
         {% endif %}
         <hr>
-        <h5>Tempos em Sistemas Externos</h5>
-        <ul class="list-group">
-            {% for uso in tarefa.tempos_externos.all %}
-                <li class="list-group-item">
-                    <strong>Por:</strong> {{ uso.criado_por }} |
-                    <strong>Sistemas:</strong> {{ uso.sistemas.all|join:", " }} |
-                    <strong>Tempo:</strong> {{ uso.tempo_utilizado }}
-                </li>
-            {% empty %}
-                <li class="list-group-item text-muted">Nenhum tempo registrado</li>
-            {% endfor %}
-        </ul>
+        <h5><strong>Tempos em Sistemas Externos</strong></h5>
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Usuário</th>
+                    <th>Sistema</th>
+                    <th>Tempo Gasto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in tempos_externos_formatados %}
+                <tr>
+                    <td>{{ item.usuario }}</td>
+                    <td>{{ item.sistema }}</td>
+                    <td>{{ item.tempo }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-muted">Nenhum tempo registrado</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
+        <div class="mt-4">
+            <a href="{% url 'adicionar_tempo_externo' tarefa.id%}" class="btn btn-outline-primary">Adicionar Tempo</a>
+        </div>
+        <hr>
         <h5><strong>Comentários:</strong></h5>
 
         <form method="post" class="mb-3" id="comentario-form">

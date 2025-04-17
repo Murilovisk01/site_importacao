@@ -13,8 +13,8 @@ from django.utils.timezone import localtime,now
 from core.decorators import aprovado_required
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
-from .models import Implatacao, RegistroTempo, ScriptSQL, SistemaExterno, Tarefa, Sistema, TipoTarefa, Perfil
-from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, ScriptSQLForm, SistemaExternoForm, TipoScriptForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
+from .models import Implatacao, RegistroTempo, SistemaExterno, Tarefa, Sistema, TempoSistemaExterno, TipoTarefa, Perfil
+from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, SistemaExternoForm, TempoSistemaExternoForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
 from dal import autocomplete
 from django.core.paginator import Paginator
@@ -269,7 +269,8 @@ def excluir_tarefa(request, tarefa_id):
 @aprovado_required
 def detalhes_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
-    # Calcular tempo total da tarefa
+
+    # ⏱️ Calcular tempo total da tarefa
     registros = tarefa.registros_tempo.all()
     total_segundos = sum(
         [(r.fim - r.inicio if r.fim else timezone.now() - r.inicio).total_seconds() for r in registros],
@@ -277,9 +278,10 @@ def detalhes_tarefa(request, tarefa_id):
     )
     tempo_total = str(timedelta(seconds=int(total_segundos)))
 
+    # 💬 Comentários
     if request.method == 'POST':
         form = ComentarioForm(request.POST)
-        form.fields['texto'].widget.attrs.update({'tabindex': '-1'})  # ← aqui
+        form.fields['texto'].widget.attrs.update({'tabindex': '-1'})
         if form.is_valid():
             comentario = form.save(commit=False)
             comentario.tarefa = tarefa
@@ -289,15 +291,36 @@ def detalhes_tarefa(request, tarefa_id):
             return redirect('detalhes_tarefa', tarefa_id=tarefa.id)
     else:
         form = ComentarioForm()
-        form.fields['texto'].widget.attrs.update({'tabindex': '-1'})  # ← aqui também
+        form.fields['texto'].widget.attrs.update({'tabindex': '-1'})
 
     comentarios = tarefa.comentarios.all().order_by('-criado_em')
+
+    # 🧠 Obter e formatar tempos em sistemas externos
+    registros_externos = tarefa.tempos_externos.select_related('usuario', 'sistema')
+
+    def formatar_tempo(td):
+        if not td:
+            return "00:00"
+        total_segundos = int(td.total_seconds())
+        horas = total_segundos // 3600
+        minutos = (total_segundos % 3600) // 60
+        return f"{horas:02d}:{minutos:02d}"
+
+    tempos_externos_formatados = [
+        {
+            'usuario': r.usuario.get_full_name() or r.usuario.username,
+            'sistema': r.sistema.nome,
+            'tempo': formatar_tempo(r.tempo_corrido),
+        }
+        for r in registros_externos
+    ]
 
     return render(request, 'core/tela_tarefas/detalhes_tarefa.html', {
         'tarefa': tarefa,
         'form': form,
         'comentarios': comentarios,
         'tempo_total': tempo_total,
+        'tempos_externos_formatados': tempos_externos_formatados,
     })
 
 @login_required
@@ -452,6 +475,7 @@ def remover_membro(request, perfil_id):
     messages.success(request, f"{nome_usuario} foi desativado.")
     return redirect('painel_equipe')
 
+# Relatorio equipe
 @aprovado_required
 @login_required
 def relatorio_equipe(request):
@@ -522,7 +546,25 @@ def relatorio_equipe(request):
 
     tarefas_por_sistema = tarefas.values('sistema__nome').annotate(qtd=Count('id')).order_by('sistema__nome')
 
+    # Tempo de sistemas externos por tipo de tarefa
+    tempo_externo_query = TempoSistemaExterno.objects.filter(tarefa__in=tarefas)
+    if usuario_id:
+        tempo_externo_query = tempo_externo_query.filter(usuario_id=usuario_id)
+
+    tempo_externo_agregado = (
+        tempo_externo_query
+        .values('tarefa__tipo__nome')
+        .annotate(tempo_total=Sum('tempo_corrido'))
+    )
+
+    tempo_externo_formatado = {
+        item['tarefa__tipo__nome'] or 'Sem tipo': formatar_timedelta(item['tempo_total'])
+        for item in tempo_externo_agregado
+    }
+
+
     context = {
+        'tempo_externo_por_tipo': tempo_externo_formatado,
         'tarefas_por_sistema': list(tarefas_por_sistema),
         'tempo_por_tipo': tempo_formatado,
         'dados_grafico_tipo_status': dict(dados_grafico_tipo_status),
@@ -666,7 +708,7 @@ def meu_relatorio_tempo(request):
 
     registros_ordenados = dict(sorted(registros_por_dia.items(), reverse=True))
 
-    return render(request, 'core/relatorio_individual.html', {
+    return render(request, 'core/tela_tempo/gerenciador_tempo.html', {
         'registros_por_dia': registros_ordenados,
         'page_obj': page_obj,
         'filtros': {
@@ -689,7 +731,7 @@ def registrar_tempo_manual(request):
             return redirect('meu_relatorio_tempo')  # ou onde desejar
     else:
         form = RegistroTempoForm()
-    return render(request, 'core/registro_tempo_form.html', {'form': form})
+    return render(request, 'core/tela_tempo/registro_tempo_form.html', {'form': form})
 
 @login_required
 @aprovado_required
@@ -725,81 +767,6 @@ class TarefaAutocomplete(autocomplete.Select2QuerySetView):
                 Q(atribuido_para__username__icontains=self.q)
             )
         return qs
-
-# Tela de Script, função de criar tipo, script, edição e exclusão
-@login_required
-@aprovado_required
-def criar_tipo_script(request):
-    if request.method == 'POST':
-        form = TipoScriptForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('criar_script')  # ou onde quiser voltar
-    else:
-        form = TipoScriptForm()
-    
-    return render(request, 'core/tela_scripts/tipo_script_form.html', {'form': form})
-
-@login_required
-@aprovado_required
-def criar_script(request):
-    form = ScriptSQLForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        script = form.save(commit=False)
-        script.autor = request.user
-        script.save()
-        return redirect('listar_scripts')  # redirecione para uma listagem
-    return render(request, 'core/tela_scripts/script_form.html', {'form': form, 'modo': 'criar'})
-
-@login_required
-@aprovado_required
-def editar_script(request, pk):
-    script = get_object_or_404(ScriptSQL, pk=pk)
-    form = ScriptSQLForm(request.POST or None, instance=script)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        return redirect('listar_scripts')
-    return render(request, 'core/tela_scripts/script_form.html', {'form': form, 'modo': 'editar'})
-
-@login_required
-@aprovado_required
-def listar_scripts(request):
-    busca = request.GET.get('q')
-    scripts = ScriptSQL.objects.all()
-
-    if busca:
-        scripts = scripts.filter(
-            Q(titulo__icontains=busca) |
-            Q(tipo__nome__icontains=busca) |
-            Q(sql__icontains=busca)
-        )
-
-    scripts = scripts.order_by('-ultima_edicao')
-
-    paginator = Paginator(scripts, 20)  
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)   
-
-    return render(request, 'core/tela_scripts/lista_scripts.html', {
-        'scripts': scripts,
-        'busca': busca,
-        'page_obj': page_obj,
-    })
-
-@login_required
-@aprovado_required
-def detalhes_script(request, pk):
-    script = get_object_or_404(ScriptSQL, pk=pk)
-    return render(request, 'core/tela_scripts/script_detalhes.html', {'script': script})
-
-@login_required
-@aprovado_required
-def excluir_script(request, pk):
-    script = get_object_or_404(ScriptSQL, pk=pk)
-    if request.method == 'POST':
-        script.delete()
-        return redirect('listar_scripts')  # ajuste esse nome se seu nome da URL for diferente
-    return render(request, 'core/confirmar_exclusao.html', {'script': script})
 
 # Tela sistema externo
 @login_required
@@ -851,3 +818,26 @@ def editar_sistema_externo(request, pk):
         form = SistemaExternoForm(instance=sistema)
     
     return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Sistema Externo'})
+
+# Tela Tempo externo
+@login_required
+@aprovado_required
+def adicionar_tempo_externo(request, tarefa_id):
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+
+    if request.method == 'POST':
+        form = TempoSistemaExternoForm(request.POST)
+        if form.is_valid():
+            tempo_externo = form.save(commit=False)
+            tempo_externo.usuario = request.user
+            tempo_externo.tarefa = tarefa
+            tempo_externo.save()
+            messages.success(request, 'Tempo adicionado com sucesso.')
+            return redirect('detalhes_tarefa', tarefa_id=tarefa.id)
+    else:
+        form = TempoSistemaExternoForm()
+
+    return render(request, 'core/tela_sistema_externo/adicionar_tempo_externo.html', {
+        'form': form,
+        'tarefa': tarefa
+    })

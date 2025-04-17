@@ -49,58 +49,6 @@
                         </div>
                     {% endif %}
                 {% endfor %}
-                
-                <!-- table -->
-                <div id="bloco-sistema-externo" style="display: none;">
-                    <h5 class="mt-4">Sistemas Externos Utilizados</h5>
-                
-                    {% if registros_tempo_externo %}
-                    <table class="table table-bordered mt-3">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Sistema</th>
-                                <th>Usuário</th>
-                                <th>Tempo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for registro in registros_tempo_externo %}
-                            <tr>
-                                <td>{{ registro.sistema.nome }}</td>
-                                <td>{{ registro.usuario.get_full_name|default:registro.usuario.username }}</td>
-                                <td>
-                                    {% with total=registro.tempo_corrido.total_seconds %}
-                                      {% widthratio total 3600 1 as horas %}
-                                      {% widthratio total|divisibleby:3600|yesno:"0,1" 60 1 as minutos %}
-                                      {{ horas|stringformat:"02d" }}:{{ minutos|stringformat:"02d" }}
-                                    {% endwith %}
-                                  </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                        <p class="text-muted">Nenhum tempo registrado ainda.</p>
-                    {% endif %}
-                
-                    <!-- Formulário de Adição -->
-                    <div class="mt-3 border rounded p-3 bg-light">
-                        <h6>Adicionar Sistema</h6>
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-6">
-                                {{ tempo_form.sistema.label_tag }}  <!-- CORRETO -->
-                                {{ tempo_form.sistema }}  
-                            </div>
-                            <div class="col-md-4">
-                                {{ tempo_form.tempo_corrido.label_tag }}
-                                {{ tempo_form.tempo_corrido }}
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" name="adicionar_tempo" value="1" class="btn btn-primary w-40">Adicionar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <hr>
                 <button type="submit" class="btn btn-success w-100">Salvar</button>
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary w-100 mt-2">Cancelar</a>
@@ -138,19 +86,6 @@
             }
         });
     }
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const select = document.getElementById('id_usou_sistema_externo');
-        const bloco = document.getElementById('bloco-sistema-externo');
-
-        function toggleSistemaExterno() {
-            bloco.style.display = select.value === 'sim' ? 'block' : 'none';
-        }
-
-        select.addEventListener('change', toggleSistemaExterno);
-        toggleSistemaExterno(); // Executa no carregamento inicial
-    });
 </script>
 
 {% endblock %}

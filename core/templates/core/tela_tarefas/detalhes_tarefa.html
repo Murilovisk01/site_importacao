@@ -33,6 +33,20 @@
                 Nenhum tempo registrado ainda.
             </div>
         {% endif %}
+        <hr>
+        <h5>Tempos em Sistemas Externos</h5>
+        <ul class="list-group">
+            {% for uso in tarefa.tempos_externos.all %}
+                <li class="list-group-item">
+                    <strong>Por:</strong> {{ uso.criado_por }} |
+                    <strong>Sistemas:</strong> {{ uso.sistemas.all|join:", " }} |
+                    <strong>Tempo:</strong> {{ uso.tempo_utilizado }}
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted">Nenhum tempo registrado</li>
+            {% endfor %}
+        </ul>
+
         <h5><strong>Comentários:</strong></h5>
 
         <form method="post" class="mb-3" id="comentario-form">

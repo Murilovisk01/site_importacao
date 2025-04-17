@@ -39,6 +39,10 @@ class Tarefa(models.Model):
         ('andamento', 'Em andamento'),
         ('concluida', 'Concluída'),
     ]
+    USO_EXTERNO_CHOICES = [
+        ('nao', 'Não'),
+        ('sim', 'Sim'),
+    ]
 
     titulo = models.CharField(max_length=200)
     tipo = models.ForeignKey(TipoTarefa, on_delete=models.CASCADE)
@@ -53,7 +57,12 @@ class Tarefa(models.Model):
     link_redmine = models.TextField(blank=True)
     analista = models.ForeignKey(Implatacao, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_analista')
     implatador = models.ForeignKey(Implatacao, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_implantador')
-
+    usou_sistema_externo = models.CharField(
+        max_length=3,
+        choices=USO_EXTERNO_CHOICES,
+        default='nao',
+        verbose_name="Usou sistema externo?"
+    )
 
     def __str__(self):
         return f"{self.titulo} | {self.tipo} | {self.atribuido_para}"
@@ -92,7 +101,6 @@ class RegistroTempo(models.Model):
     def __str__(self):
         return f"{self.tarefa.titulo} - {self.inicio.strftime('%d/%m/%Y %H:%M')}"
 
-  
 @receiver(post_save, sender=User)
 def criar_ou_atualizar_perfil(sender, instance, created, **kwargs):
     if created:
@@ -119,3 +127,19 @@ class ScriptSQL(models.Model):
 
     def __str__(self):
         return self.titulo
+    
+class SistemaExterno(models.Model):
+    nome = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.nome
+
+class TempoSistemaExterno(models.Model):
+    tarefa = models.ForeignKey(Tarefa, on_delete=models.CASCADE, related_name='tempos_externos')
+    sistema = models.ForeignKey(SistemaExterno, on_delete=models.CASCADE) 
+    tempo_corrido = models.DurationField()
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.sistema} - {self.usuario} - {self.tempo_corrido}'

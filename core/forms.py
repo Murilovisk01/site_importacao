@@ -1,10 +1,11 @@
 from django import forms
-from .models import Comentario, Implatacao, RegistroTempo, ScriptSQL, TipoScript, TipoTarefa, Sistema, Tarefa
+from .models import Comentario, Implatacao, RegistroTempo, ScriptSQL, SistemaExterno, TempoSistemaExterno, TipoScript, TipoTarefa, Sistema, Tarefa
 from django.contrib.auth.models import User
 from django.forms.widgets import DateInput
 from django.forms import inlineformset_factory
 from django.contrib.auth.forms import PasswordChangeForm
 from dal import autocomplete
+from django.forms import modelformset_factory
 
 class TipoTarefaForm(forms.ModelForm):
     class Meta:
@@ -44,13 +45,17 @@ class TarefaForm(forms.ModelForm):
         model = Tarefa
         fields = [
             'titulo', 'tipo', 'sistema', 'atribuido_para', 'prazo', 'status',
-            'documentacao', 'link_glpi', 'link_redmine', 'analista', 'implatador'
+            'documentacao', 'link_glpi', 'link_redmine', 'analista', 'implatador',
+            'usou_sistema_externo'
         ]
         widgets = {
             'prazo': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'documentacao': forms.Textarea(attrs={'rows': 4}),
             'link_glpi': forms.TextInput(attrs={'placeholder': 'URL GLPI'}),
             'link_redmine': forms.TextInput(attrs={'placeholder': 'URL Redmine'}),
+            'usou_sistema_externo': forms.Select(attrs={
+                'class': 'form-select',
+            }),
         }
 
 class RegistroForm(forms.Form):
@@ -170,3 +175,22 @@ class TipoScriptForm(forms.ModelForm):
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+class SistemaExternoForm(forms.ModelForm):
+    class Meta:
+        model = SistemaExterno
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class TempoSistemaExternoForm(forms.ModelForm):
+    class Meta:
+        model = TempoSistemaExterno
+        fields = ['sistema', 'tempo_corrido']
+        widgets = {
+            'tempo_corrido': forms.TimeInput(format='%H:%M', attrs={'type': 'time'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['sistema'].queryset = SistemaExterno.objects.all()

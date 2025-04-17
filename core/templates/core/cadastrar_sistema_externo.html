@@ -1,0 +1,10 @@
+
+{% extends 'core/base.html' %}
+{% block content %}
+{% load widget_tweaks %}
+<h3>Cadastrar Sistema Externo</h3>
+<form method="post">{% csrf_token %}
+    <input type="text" name="nome" class="form-control" placeholder="Nome do sistema" required>
+    <button class="btn btn-success mt-2">Salvar</button>
+</form>
+{% endblock %}

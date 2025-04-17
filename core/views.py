@@ -9,21 +9,18 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Count,Q,Sum, F, ExpressionWrapper, DurationField
 from django.utils import timezone
-from django.utils.timezone import localtime, make_aware,now
+from django.utils.timezone import localtime,now
 from core.decorators import aprovado_required
-from django.forms import inlineformset_factory
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
-from .models import Implatacao, RegistroTempo, ScriptSQL, Tarefa, Sistema, TipoScript, TipoTarefa, Perfil
-from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, ScriptSQLForm, TipoScriptForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm,FiltroRegistroTempoForm
+from .models import Implatacao, RegistroTempo, ScriptSQL, SistemaExterno, Tarefa, Sistema, TipoTarefa, Perfil
+from .forms import  ComentarioForm, ImplantacaoForm, MinhaContaForm, RegistroTempoForm, ScriptSQLForm, SistemaExternoForm, TipoScriptForm, TipoTarefaForm, SistemaForm, TarefaForm,RegistroForm
 from .forms import RegistroForm
-from datetime import datetime, timedelta
-from django.db.models import Count, Case, When, IntegerField
 from dal import autocomplete
 from django.core.paginator import Paginator
 
 class CustomLoginView(LoginView):
-    template_name = 'core/login.html'
+    template_name = 'core/user/login.html'
     authentication_form = AuthenticationForm
 
     def form_valid(self, form):
@@ -97,6 +94,7 @@ def dashboard_kanban(request):
         'atribuidas': atribuidas,
     })
 
+# Tela Tipo Tarefas, criação, edição, exclusão
 @login_required
 @aprovado_required
 def criar_tipo_tarefa(request):
@@ -120,7 +118,7 @@ def criar_tipo_tarefa(request):
 @aprovado_required
 def listar_tipotarefas(request):
     tipos = TipoTarefa.objects.all()
-    return render(request, 'core/listar_tipotarefas.html', {'tipos': tipos})
+    return render(request, 'core/tela_tarefas/listar_tipotarefas.html', {'tipos': tipos})
 
 @login_required
 @aprovado_required
@@ -156,6 +154,7 @@ def excluir_tipo_tarefa(request, tipo_id):
     
     return render(request, 'core/confirmar_exclusao.html', {'tipo':tipo})
 
+# Tela Sistemas, criação, edição, exclusão
 @login_required
 @aprovado_required
 def criar_sistema(request):
@@ -177,7 +176,7 @@ def criar_sistema(request):
 def listar_sistemas(request):
 
     sistemas = Sistema.objects.all()
-    return render(request, 'core/listar_sistemas.html', {'sistemas': sistemas})
+    return render(request, 'core/tela_sistemas/listar_sistemas.html', {'sistemas': sistemas})
 
 @login_required
 @aprovado_required
@@ -210,6 +209,7 @@ def excluir_sistema(request,sistema_id):
     
     return render(request,'core/confirmar_exclusao.html',{'sistema':sistema})
 
+# Telas Tarefas, criação, edição, exclusão, mover
 @login_required
 @aprovado_required
 def criar_tarefa(request):
@@ -293,7 +293,7 @@ def detalhes_tarefa(request, tarefa_id):
 
     comentarios = tarefa.comentarios.all().order_by('-criado_em')
 
-    return render(request, 'core/detalhes_tarefa.html', {
+    return render(request, 'core/tela_tarefas/detalhes_tarefa.html', {
         'tarefa': tarefa,
         'form': form,
         'comentarios': comentarios,
@@ -318,6 +318,7 @@ def mover_tarefa(request, tarefa_id, novo_status):
     messages.success(request, f'Tarefa movida para {novo_status}.')
     return redirect('dashboard')
 
+# Tela Usuario, Registro, edição, painel de equipe, aprovar, remover, relatorios
 def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
@@ -327,7 +328,7 @@ def registro_usuario(request):
             # Verifica se o nome de usuário já está em uso
             if User.objects.filter(username=username).exists():
                 form.add_error('username', 'Este nome de usuário já está em uso.')
-                return render(request, 'core/registro.html', {'form': form})
+                return render(request, 'core/user/registro.html', {'form': form})
 
             try:
                 user = User.objects.create_user(
@@ -347,7 +348,7 @@ def registro_usuario(request):
                 messages.error(request, f'Erro ao registrar: {str(e)}')
     else:
         form = RegistroForm()
-    return render(request, 'core/registro.html', {'form': form})
+    return render(request, 'core/user/registro.html', {'form': form})
 
 @login_required
 def minha_conta(request):
@@ -372,7 +373,7 @@ def minha_conta(request):
     else:
         form = MinhaContaForm(instance=user)
 
-    return render(request, 'core/minha_conta.html', {'form': form})
+    return render(request, 'core/user/minha_conta.html', {'form': form})
 
 @login_required
 @aprovado_required
@@ -384,7 +385,7 @@ def painel_equipe(request):
 
     membros = Perfil.objects.exclude(user=request.user)
 
-    return render(request, 'core/painel_equipe.html', {
+    return render(request, 'core/tela_equipe/painel_equipe.html', {
         'membros': membros
     })
 
@@ -541,7 +542,7 @@ def relatorio_equipe(request):
         }
     }
 
-    return render(request, 'core/relatorio_equipe.html', context)
+    return render(request, 'core/tela_equipe/relatorio_equipe.html', context)
 
 # Tela de implantação, função de inicar, pausar e editar os registros da implantação
 @login_required
@@ -799,3 +800,54 @@ def excluir_script(request, pk):
         script.delete()
         return redirect('listar_scripts')  # ajuste esse nome se seu nome da URL for diferente
     return render(request, 'core/confirmar_exclusao.html', {'script': script})
+
+# Tela sistema externo
+@login_required
+@aprovado_required
+def criar_sistema_externo(request):
+    if request.method == 'POST':
+        form = SistemaExternoForm(request.POST, request.FILES)
+        if form.is_valid():
+            sistema_externo = form.save(commit=False)
+            sistema_externo.usuario = request.user
+            sistema_externo.save()
+            messages.success(request, 'Sistema Externo criado com sucesso.')
+            return redirect('listar_sistemas_externo')
+    else:
+        form = SistemaExternoForm()
+
+    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Criar Sistema Externo'})
+
+@login_required
+@aprovado_required
+def listar_sistemas_externo(request):
+    sistemas = SistemaExterno.objects.all()
+    return render(request, 'core/tela_sistema_externo/listar_sistema_externo.html', {'sistemas': sistemas})
+
+@login_required
+@aprovado_required
+def excluir_sistema_externo(request,pk):
+    sistema = get_object_or_404(SistemaExterno, pk=pk)
+    
+    if request.method == 'POST':
+        sistema.delete()
+        messages.success(request, "Sistema excluido com sucesso.")
+        return redirect('listar_sistemas_externo')
+    
+    return render(request,'core/confirmar_exclusao.html',{'sistema':sistema})
+
+@login_required
+@aprovado_required
+def editar_sistema_externo(request, pk):
+    sistema = get_object_or_404(SistemaExterno, pk=pk)
+    
+    if request.method == 'POST':
+        form = SistemaExternoForm(request.POST, request.FILES, instance=sistema,)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "sistema editado com sucesso.")
+            return redirect('listar_sistemas_externo')
+    else:
+        form = SistemaExternoForm(instance=sistema)
+    
+    return render(request, 'core/form_basico.html', {'form': form, 'titulo': 'Editar Sistema Externo'})

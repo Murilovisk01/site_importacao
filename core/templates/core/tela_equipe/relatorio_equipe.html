@@ -22,6 +22,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% if is_gerente %}
         <div class="col">
             <label>Usuário:</label>
             <select name="usuario" class="form-select">
@@ -33,6 +34,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
         <div class="col">
             <button type="submit" class="btn btn-primary">Filtrar</button>
             <a href="{% url 'relatorio_equipe' %}" class="btn btn-secondary ms-2">Limpar Filtros</a>
@@ -84,17 +86,17 @@
         {% endfor %}
     </ul>
     <hr>
-    <h5 class="mt-4">Tempo em Sistemas Externos por Tipo de Tarefa</h5>
+    <h5 class="mt-4">Tempo em Sistemas Externos por Sistema e Tipo de Tarefa</h5>
     <ul class="list-group">
-        {% for tipo, tempo in tempo_externo_por_tipo.items %}
+        {% for item in tempo_sistemas_externos_tipo %}
             <li class="list-group-item d-flex justify-content-between">
-                <span><strong>{{ tipo }}</strong></span>
-                <span>{{ tempo }}</span>
+                <span><strong>{{ item.descricao }}</strong></span>
+                <span>{{ item.tempo }}</span>
             </li>
         {% empty %}
             <li class="list-group-item text-muted">Nenhum tempo externo registrado</li>
         {% endfor %}
-    </ul>
+    </ul>    
     <hr>
     <div class="mt-5">
     <h5 class="mt-5">Tarefas por Sistema</h5>

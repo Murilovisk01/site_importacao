@@ -486,6 +486,13 @@ def relatorio_equipe(request):
     tipo_id = request.GET.get('tipo')
     status = request.GET.get('status')
     usuario_id = request.GET.get('usuario')
+    is_gerente = request.user.perfil.is_gerente
+
+    # Se não for gerente, força o filtro para o próprio usuário
+    if not is_gerente:
+    # Técnicos só podem ver suas próprias tarefas
+        usuario_id = str(request.user.id)
+
 
     hoje = now().date()
     if not data_inicio:
@@ -499,8 +506,11 @@ def relatorio_equipe(request):
         tarefas = tarefas.filter(tipo_id=tipo_id)
     if status:
         tarefas = tarefas.filter(status=status)
-    if usuario_id:
-        tarefas = tarefas.filter(atribuido_para_id=usuario_id)
+    if is_gerente:
+        if usuario_id:
+            tarefas = tarefas.filter(atribuido_para_id=usuario_id)
+    else:
+        tarefas = tarefas.filter(atribuido_para_id=request.user.id)
 
     total = tarefas.count()
     concluidas = tarefas.filter(status='concluida').count()
@@ -546,25 +556,45 @@ def relatorio_equipe(request):
 
     tarefas_por_sistema = tarefas.values('sistema__nome').annotate(qtd=Count('id')).order_by('sistema__nome')
 
-    # Tempo de sistemas externos por tipo de tarefa
-    tempo_externo_query = TempoSistemaExterno.objects.filter(tarefa__in=tarefas)
-    if usuario_id:
-        tempo_externo_query = tempo_externo_query.filter(usuario_id=usuario_id)
+    # Tempo de sistemas externos por sistema + tipo de tarefa
+    tempo_externo_agrupado_query = TempoSistemaExterno.objects.all()
 
-    tempo_externo_agregado = (
-        tempo_externo_query
-        .values('tarefa__tipo__nome')
+    # Filtro por tarefa no período
+    tempo_externo_agrupado_query = tempo_externo_agrupado_query.filter(tarefa__data_criacao__date__gte=data_inicio,
+                                                                    tarefa__data_criacao__date__lte=data_fim)
+
+    # Filtro por tipo/status se aplicável
+    if tipo_id:
+        tempo_externo_agrupado_query = tempo_externo_agrupado_query.filter(tarefa__tipo_id=tipo_id)
+    if status:
+        tempo_externo_agrupado_query = tempo_externo_agrupado_query.filter(tarefa__status=status)
+
+    # Se for técnico, mostrar só tempos lançados por ele
+    if not is_gerente:
+        tempo_externo_agrupado_query = tempo_externo_agrupado_query.filter(usuario=request.user)
+    elif usuario_id:
+        # Se for gerente e estiver filtrando
+        tempo_externo_agrupado_query = tempo_externo_agrupado_query.filter(usuario_id=usuario_id)
+
+    tempo_externo_agrupado = (
+        tempo_externo_agrupado_query
+        .values('sistema__nome', 'tarefa__tipo__nome')
         .annotate(tempo_total=Sum('tempo_corrido'))
+        .order_by('sistema__nome', 'tarefa__tipo__nome')
     )
 
-    tempo_externo_formatado = {
-        item['tarefa__tipo__nome'] or 'Sem tipo': formatar_timedelta(item['tempo_total'])
-        for item in tempo_externo_agregado
-    }
+    tempo_sistemas_tipo_formatado = [
+        {
+            'descricao': f"{item['sistema__nome']} - {item['tarefa__tipo__nome'] or 'Sem tipo'}",
+            'tempo': formatar_timedelta(item['tempo_total'])
+        }
+        for item in tempo_externo_agrupado
+    ]
 
 
     context = {
-        'tempo_externo_por_tipo': tempo_externo_formatado,
+        'is_gerente': is_gerente,
+        'tempo_sistemas_externos_tipo': tempo_sistemas_tipo_formatado,
         'tarefas_por_sistema': list(tarefas_por_sistema),
         'tempo_por_tipo': tempo_formatado,
         'dados_grafico_tipo_status': dict(dados_grafico_tipo_status),

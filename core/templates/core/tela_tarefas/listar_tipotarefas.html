@@ -12,6 +12,7 @@
     <thead class="table-light">
         <tr>
             <th>Nome</th>
+            <th>Titulo</th>
             <th class="text-end">Ações</th>
         </tr>
     </thead>
@@ -19,6 +20,7 @@
         {% for tipo in tipos %}
         <tr>
             <td>{{ tipo.nome }}</td>
+            <td>{{ tipo.titulo_padrao }}</td>
             <td class="text-end">
                 <a href="{% url 'editar_tipotarefa' tipo.id %}" class="btn btn-sm btn-outline-info mt-2">Editar</a>
                 {%if user == tipo.criado_por%}

@@ -8,9 +8,13 @@ class Sistema(models.Model):
     data_mapeamento = models.DateField(null=True, blank=True)
     base_dados = models.CharField(max_length=100, blank=True)
     icone = models.ImageField(upload_to='icones_sistema/', null=True, blank=True)
+    link = models.URLField(blank=True, null=True)
+    data_ultima_atualizacao = models.DateField(null=True, blank=True)
     criado_por = models.ForeignKey(User, related_name='sistemas_criados', on_delete=models.CASCADE)
+
     def __str__(self):
         return self.nome
+
 
 class TipoTarefa(models.Model):
     nome = models.CharField(max_length=100)

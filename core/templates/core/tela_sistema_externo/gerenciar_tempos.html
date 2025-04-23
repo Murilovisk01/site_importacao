@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}
+{% block title %}Gerenciar Tempos Externos{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <h4>Tempos Externos - {{ tarefa.titulo }}</h4>
+    <table class="table table-bordered mt-3">
+        <thead class="table-light">
+            <tr>
+                <th>Usuário</th>
+                <th>Sistema</th>
+                <th>Tempo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in registros %}
+            <tr>
+                <td>{{ item.usuario.get_full_name|default:item.usuario.username }}</td>
+                <td>{{ item.sistema.nome }}</td>
+                <td>{{ item.tempo_corrido }}</td>
+                <td>
+                    {% if item.usuario == user %}
+                        <a href="{% url 'editar_tempo_externo' item.id %}" class="btn btn-sm btn-primary">Editar</a>
+                        <form method="post" action="{% url 'excluir_tempo_externo' item.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-danger">Excluir</button>
+                        </form>
+                    {% else %}
+                        <span class="text-muted">Sem permissão</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted">Nenhum tempo registrado</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'detalhes_tarefa' tarefa.id %}" class="btn btn-secondary mt-3">Voltar</a>
+</div>
+
+{% endblock %}

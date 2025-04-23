@@ -14,6 +14,8 @@
             <th>Nome</th>
             <th>DataBase</th>
             <th>Data Mapeamento</th>
+            <th>Criador por</th>
+            <th>Ultima Atualização</th>
             <th class="text-end">Ações</th>
         </tr>
     </thead>
@@ -23,6 +25,8 @@
             <td>{{ sistema.nome }}</td>
             <td>{{ sistema.base_dados }}</td>
             <td>{{ sistema.data_mapeamento }}</td>
+            <td>{{sistema.criado_por}}</td>
+            <td>{{ sistema.data_ultima_atualizacao|default:sistema.data_mapeamento }}</td>            
             <td class="text-end">
                 <a href="{% url 'editar_sistema' sistema.id %}" class="btn btn-sm btn-outline-info mt-2">Editar</a>
                 {%if user == sistema.criado_por%}

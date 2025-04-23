@@ -16,16 +16,17 @@ class TipoTarefaForm(forms.ModelForm):
 class SistemaForm(forms.ModelForm):
     class Meta:
         model = Sistema
-        fields = ['nome', 'data_mapeamento', 'base_dados', 'icone']
+        fields = ['nome', 'data_mapeamento', 'data_ultima_atualizacao', 'base_dados', 'link', 'icone', 'criado_por']
         widgets = {
             'data_mapeamento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'data_ultima_atualizacao': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Define o valor inicial formatado corretamente para edição
-        if self.instance and self.instance.pk and self.instance.data_mapeamento:
-            self.initial['data_mapeamento'] = self.instance.data_mapeamento.strftime('%Y-%m-%d')
+        for campo in ['data_mapeamento', 'data_ultima_atualizacao']:
+            if self.instance and getattr(self.instance, campo):
+                self.initial[campo] = getattr(self.instance, campo).strftime('%Y-%m-%d')
 
 class TarefaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

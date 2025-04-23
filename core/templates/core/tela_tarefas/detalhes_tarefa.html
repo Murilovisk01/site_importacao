@@ -1,6 +1,7 @@
 {% extends 'core/base.html' %}
 {% load markdown_decorator %}
 {% load duration_filters %}
+{% load extra_filters %}
 {% block title %}Detalhes da Tarefa{% endblock %}
 
 {% block content %}
@@ -14,15 +15,28 @@
         <p><strong>Prazo:</strong> {{ tarefa.prazo }}</p>
         <p><strong>Criado por:</strong> {{ tarefa.criado_por }}</p>
         <p><strong>Atribuído para:</strong> {{ tarefa.atribuido_para }}</p>
-        <p><strong>Link GLPI:</strong> {{ tarefa.link_glpi }}</p>
-        <p><strong>Link Redmine:</strong> {{ tarefa.link_redmine }}</p>
+        <p><strong>Link GLPI:</strong>
+            {% if tarefa.link_glpi %}
+                <a href="{{ tarefa.link_glpi }}" target="_blank">{{ tarefa.link_glpi }}</a>
+            {% else %}
+                <span class="text-muted">Nenhum link informado</span>
+            {% endif %}
+        </p>
+        
+        <p><strong>Link Redmine:</strong>
+            {% if tarefa.link_redmine %}
+                <a href="{{ tarefa.link_redmine }}" target="_blank">{{ tarefa.link_redmine }}</a>
+            {% else %}
+                <span class="text-muted">Nenhum link informado</span>
+            {% endif %}
+        </p>        
         <p><strong>Analista:</strong> {{ tarefa.analista }}</p>
         <p><strong>Implatador:</strong> {{ tarefa.implatador }}</p>
         <hr>
-        <h5><strong>Documentação da Tarefa:</strong></h5>
-        <div style="white-space: pre-wrap;" class="bg-light p-3 rounded">
-            {{ tarefa.documentacao|urlize|linebreaksbr }}
-        </div>
+        <h5><strong>Observação:</strong></h5>
+        <div class="bg-light p-3 rounded">
+            <pre class="m-0" style="white-space: pre-wrap;">{{ tarefa.documentacao|urlize|linebreaksbr }}</pre>
+        </div>                    
         <hr>
         <h5><strong>Tempo Geral:</strong></h5>
         {% if tempo_total != "0:00:00" %}
@@ -56,9 +70,10 @@
                 {% endfor %}
             </tbody>
         </table>
-
         <div class="mt-4">
             <a href="{% url 'adicionar_tempo_externo' tarefa.id%}" class="btn btn-outline-primary">Adicionar Tempo</a>
+            <a href="{% url 'gerenciar_tempos_externos' tarefa.id %}" class="btn btn-outline-secondary ms-2">Gerenciar Tempos</a>
+
         </div>
         <hr>
         <h5><strong>Comentários:</strong></h5>

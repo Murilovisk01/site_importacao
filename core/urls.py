@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, TarefaAutocomplete, adicionar_tempo_externo, aprovar_membro, criar_implantador, criar_sistema, criar_sistema_externo, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_registro_tempo, editar_sistema, editar_sistema_externo, editar_tarefa, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_sistema_externo, excluir_tarefa, excluir_tipo_tarefa, iniciar_tempo, listar_implantador, listar_sistemas, listar_sistemas_externo, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registrar_tempo_manual, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
+from .views import CustomLoginView, TarefaAutocomplete, adicionar_tempo_externo, aprovar_membro, criar_implantador, criar_sistema, criar_sistema_externo, criar_tarefa, criar_tipo_tarefa, dashboard_kanban, detalhes_tarefa, editar_implatador, editar_registro_tempo, editar_sistema, editar_sistema_externo, editar_tarefa, editar_tempo_externo, editar_tipo_tarefa, excluir_implantador, excluir_sistema, excluir_sistema_externo, excluir_tarefa, excluir_tempo_externo, excluir_tipo_tarefa, gerenciar_tempos_externos, iniciar_tempo, listar_implantador, listar_sistemas, listar_sistemas_externo, listar_tipotarefas, meu_relatorio_tempo, minha_conta, mover_tarefa, painel_equipe, pausar_tempo, registrar_tempo_manual, registro_usuario, relatorio_equipe, remover_membro, tela_inicial, toggle_gerente
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -58,6 +58,11 @@ urlpatterns = [
     path('sistema_externo/<int:pk>/editar/', editar_sistema_externo, name='editar_sistema_externo'),
 
     path('tarefa/<int:tarefa_id>/tempo-externo/', adicionar_tempo_externo, name='adicionar_tempo_externo'),
+    path('tempo_externo/<int:tempo_id>/editar/', editar_tempo_externo, name='editar_tempo_externo'),
+    path('tempo_externo/<int:tempo_id>/excluir/', excluir_tempo_externo, name='excluir_tempo_externo'),
+    path('tarefa/<int:tarefa_id>/tempos_externos/', gerenciar_tempos_externos, name='gerenciar_tempos_externos'),
+
+
 
 
 ]

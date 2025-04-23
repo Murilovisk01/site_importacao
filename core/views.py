@@ -781,7 +781,7 @@ def editar_registro_tempo(request, pk):
     else:
         form = RegistroTempoForm(instance=registro)
 
-    return render(request, 'core/registro_tempo_form.html', {'form': form})
+    return render(request, 'core/tela_tempo/registro_tempo_form.html', {'form': form})
 
 class TarefaAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
@@ -870,4 +870,52 @@ def adicionar_tempo_externo(request, tarefa_id):
     return render(request, 'core/tela_sistema_externo/adicionar_tempo_externo.html', {
         'form': form,
         'tarefa': tarefa
+    })
+
+@login_required
+@aprovado_required
+def editar_tempo_externo(request, tempo_id):
+    tempo = get_object_or_404(TempoSistemaExterno, id=tempo_id)
+
+    if tempo.usuario != request.user:
+        return HttpResponseForbidden("Você não pode editar esse tempo.")
+
+    if request.method == 'POST':
+        form = TempoSistemaExternoForm(request.POST, instance=tempo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tempo externo editado com sucesso.")
+            return redirect('detalhes_tarefa', tarefa_id=tempo.tarefa.id)
+    else:
+        form = TempoSistemaExternoForm(instance=tempo)
+
+    return render(request, 'core/form_basico.html', {
+        'form': form,
+        'titulo': f'Editar Tempo Externo - {tempo.tarefa.titulo}'
+    })
+
+@login_required
+@aprovado_required
+def excluir_tempo_externo(request, tempo_id):
+    tempo = get_object_or_404(TempoSistemaExterno, id=tempo_id)
+
+    if tempo.usuario != request.user:
+        return HttpResponseForbidden("Você não pode excluir esse tempo.")
+
+    if request.method == 'POST':
+        tempo.delete()
+        messages.success(request, "Tempo externo excluído.")
+        return redirect('detalhes_tarefa', tarefa_id=tempo.tarefa.id)
+
+    return render(request, 'core/confirmar_exclusao.html', {'tempo': tempo})
+
+@login_required
+@aprovado_required
+def gerenciar_tempos_externos(request, tarefa_id):
+    tarefa = get_object_or_404(Tarefa, id=tarefa_id)
+    registros = tarefa.tempos_externos.select_related('usuario', 'sistema')
+
+    return render(request, 'core/tela_sistema_externo/gerenciar_tempos.html', {
+        'tarefa': tarefa,
+        'registros': registros,
     })

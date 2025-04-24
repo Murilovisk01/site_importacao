@@ -270,7 +270,7 @@ def excluir_tarefa(request, tarefa_id):
 def detalhes_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
-    # ⏱️ Calcular tempo total da tarefa
+    # Calcular tempo total da tarefa
     registros = tarefa.registros_tempo.all()
     total_segundos = sum(
         [(r.fim - r.inicio if r.fim else timezone.now() - r.inicio).total_seconds() for r in registros],
@@ -278,7 +278,7 @@ def detalhes_tarefa(request, tarefa_id):
     )
     tempo_total = str(timedelta(seconds=int(total_segundos)))
 
-    # 💬 Comentários
+    # Comentários
     if request.method == 'POST':
         form = ComentarioForm(request.POST)
         form.fields['texto'].widget.attrs.update({'tabindex': '-1'})
@@ -295,7 +295,7 @@ def detalhes_tarefa(request, tarefa_id):
 
     comentarios = tarefa.comentarios.all().order_by('-criado_em')
 
-    # 🧠 Obter e formatar tempos em sistemas externos
+    # Obter e formatar tempos em sistemas externos
     registros_externos = tarefa.tempos_externos.select_related('usuario', 'sistema')
 
     def formatar_tempo(td):
@@ -334,7 +334,7 @@ def mover_tarefa(request, tarefa_id, novo_status):
 
         if not has_tempo:
             messages.warning(request, '⚠️ Esta tarefa não pode ser concluída pois não possui tempo registrado.')
-            return redirect('dashboard')  # ou para detalhes da tarefa
+            return redirect('dashboard') 
 
     tarefa.status = novo_status
     tarefa.save()
@@ -360,7 +360,7 @@ def registro_usuario(request):
                     password=form.cleaned_data['senha']
                 )
                 user.save()
-                perfil = user.perfil  # Criado automaticamente via signal
+                perfil = user.perfil 
                 perfil.aprovado = False
                 perfil.save()
 
@@ -490,9 +490,7 @@ def relatorio_equipe(request):
 
     # Se não for gerente, força o filtro para o próprio usuário
     if not is_gerente:
-    # Técnicos só podem ver suas próprias tarefas
         usuario_id = str(request.user.id)
-
 
     hoje = now().date()
     if not data_inicio:
@@ -590,7 +588,6 @@ def relatorio_equipe(request):
         }
         for item in tempo_externo_agrupado
     ]
-
 
     context = {
         'is_gerente': is_gerente,

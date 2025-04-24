@@ -12,10 +12,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-import cloudinary
-import dj_database_url
-
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,9 +30,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
-    'site-importacao.onrender.com', 
     '*',
-    'importacaoold.up.railway.app',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -58,9 +52,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'dal',
     'dal_select2',
-    'widget_tweaks',
-    'cloudinary',
-    'cloudinary_storage'
+    'widget_tweaks'
 ]
 
 CLOUDINARY_STORAGE = {
@@ -109,9 +101,15 @@ WSGI_APPLICATION = 'tarefas.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///db.sqlite3', conn_max_age=600)
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'site_importacao',
+        'USER': 'postgres',
+        'PASSWORD': 'supertux',
+        'HOST': 'localhost', 
+        'PORT': '5432',
+    }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

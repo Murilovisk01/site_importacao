@@ -35,7 +35,7 @@ class CustomLoginView(LoginView):
 
 def tela_inicial(request):
     termo = request.GET.get('q', '')
-    sistemas = Sistema.objects.all()
+    sistemas = Sistema.objects.all().order_by('nome')
 
     if termo:
         sistemas = sistemas.filter(nome__icontains=termo)
@@ -175,7 +175,7 @@ def criar_sistema(request):
 @aprovado_required
 def listar_sistemas(request):
 
-    sistemas = Sistema.objects.all()
+    sistemas = Sistema.objects.all().order_by('nome')
     return render(request, 'core/tela_sistemas/listar_sistemas.html', {'sistemas': sistemas})
 
 @login_required

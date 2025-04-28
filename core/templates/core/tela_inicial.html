@@ -72,7 +72,9 @@
                     <div class="sistema-card text-center shadow d-flex flex-column justify-content-between align-items-center">
                         {% if sistema.icone %}
                             <div class="d-flex justify-content-center align-items-center" style="height: 100px;">
-                                <img src="{{ sistema.icone.url }}" alt="{{ sistema.nome }}" style="max-height: 80px; object-fit: contain;">
+                                {% if sistema.icone %}
+                                    <img src="{% static 'icones_sistema/' %}{{ sistema.icone }}" alt="{{ sistema.nome }}"style="max-height: 80px; object-fit: contain;">
+                                {% endif %}
                             </div>
                         {% endif %}
                         <div>

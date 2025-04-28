@@ -14,6 +14,33 @@ class TipoTarefaForm(forms.ModelForm):
         fields = ['nome','titulo_padrao', 'roteiro']
 
 class SistemaForm(forms.ModelForm):
+    ICONES_CHOICES = [
+        ('amazonrds.png', 'Amazon RDS'),
+        ('amazonaurora.png', 'Amazon Aurora'),
+        ('cassandra.png', 'Cassandra'),
+        ('couchdb.png', 'CouchDB'),
+        ('dbf.png', 'DBF'),
+        ('dynamodb.png', 'DynamoDB'),
+        ('elasticsearch.png', 'Elasticsearch'),
+        ('firebase.png', 'Firebase'),
+        ('firebird.png', 'Firebird'),
+        ('googlecloudsql.png', 'Google Cloud SQL'),
+        ('ibmdb2.png', 'IBM Db2'),
+        ('informix.png', 'Informix'),
+        ('mariadb.png', 'MariaDB'),
+        ('mongodb.png', 'MongoDB'),
+        ('mysql.png', 'MySQL'),
+        ('neo4j.png', 'Neo4j'),
+        ('oracle.png', 'Oracle'),
+        ('postgresql.png', 'PostgreSQL'),
+        ('redis.png', 'Redis'),
+        ('snowflake.png', 'Snowflake'),
+        ('sqlite.png', 'SQLite'),
+        ('sqlserver.png', 'SQL Server'),
+    ]
+
+    icone = forms.ChoiceField(choices=ICONES_CHOICES, required=False)
+
     class Meta:
         model = Sistema
         fields = ['nome', 'data_mapeamento', 'data_ultima_atualizacao', 'base_dados', 'link', 'icone', 'criado_por']

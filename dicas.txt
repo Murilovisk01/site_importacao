@@ -132,3 +132,31 @@ No navegador:
 http://ip-do-servidor
 
 Seu projeto Django agora está rodando com sucesso no Windows Server!
+
+
+sudo docker-compose down
+sudo docker image prune -a
+sudo docker-compose up -d --build
+
+sudo docker logs a7-site-importacao_web_1
+
+curl http://localhost:8000
+
+
+cd /etc/apache2/sites-available/
+
+/var/www/a7-site-importacao/
+
+ssh murilo.couto@204.216.131.159
+
+scp -r (a pasta que vai transferir) murilo.couto@204.216.131.159:~
+
+se for arquivo tirar o -r
+
+scp /home/alpha7/Murilo/site_importacao/core/models.py murilo.couto@204.216.131.159:~
+
+scp /home/alpha7/Murilo/site_importacao/core/forms.py murilo.couto@204.216.131.159:~
+
+sudo mv -f ~/forms.py /var/www/a7-site-importacao/core/models.py
+
+sudo mv -f ~/forms.py /var/www/a7-site-importacao/core/forms.py

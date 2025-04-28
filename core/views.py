@@ -32,6 +32,10 @@ class CustomLoginView(LoginView):
 
         login(self.request, user)
         return redirect('dashboard') 
+    
+    def form_invalid(self, form):
+        messages.error(self.request, "Usuário ou senha inválidos. Por favor, tente novamente.")
+        return super().form_invalid(form)
 
 def tela_inicial(request):
     termo = request.GET.get('q', '')
@@ -270,13 +274,39 @@ def excluir_tarefa(request, tarefa_id):
 def detalhes_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
+    registros = tarefa.registros_tempo.select_related('usuario').all()
+
     # Calcular tempo total da tarefa
-    registros = tarefa.registros_tempo.all()
     total_segundos = sum(
         [(r.fim - r.inicio if r.fim else timezone.now() - r.inicio).total_seconds() for r in registros],
         0
     )
     tempo_total = str(timedelta(seconds=int(total_segundos)))
+
+    def formatar_tempo(td):
+        if not td:
+            return "00:00:00"
+        total_segundos = int(td.total_seconds())
+        horas = total_segundos // 3600
+        minutos = (total_segundos % 3600) // 60
+        segundos = total_segundos % 60
+        return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+    
+    def formatar_data(dt):
+        if not dt:
+            return "-"
+        dt_local = localtime(dt)
+        return dt_local.strftime('%d/%m/%Y %H:%M:%S')
+
+    registros_gerais_formatados = [
+        {
+            'usuario': r.usuario.get_full_name() or r.usuario.username,
+            'inicio': formatar_data(r.inicio),
+            'fim': formatar_data(r.fim) if r.fim else "Em andamento",
+            'tempo': formatar_tempo(r.fim - r.inicio) if r.fim else formatar_tempo(timezone.now() - r.inicio),
+        }
+        for r in registros
+    ]
 
     # Comentários
     if request.method == 'POST':
@@ -298,7 +328,7 @@ def detalhes_tarefa(request, tarefa_id):
     # Obter e formatar tempos em sistemas externos
     registros_externos = tarefa.tempos_externos.select_related('usuario', 'sistema')
 
-    def formatar_tempo(td):
+    def formatar_tempo_externo(td):
         if not td:
             return "00:00"
         total_segundos = int(td.total_seconds())
@@ -310,7 +340,7 @@ def detalhes_tarefa(request, tarefa_id):
         {
             'usuario': r.usuario.get_full_name() or r.usuario.username,
             'sistema': r.sistema.nome,
-            'tempo': formatar_tempo(r.tempo_corrido),
+            'tempo': formatar_tempo_externo(r.tempo_corrido),
         }
         for r in registros_externos
     ]
@@ -320,7 +350,9 @@ def detalhes_tarefa(request, tarefa_id):
         'form': form,
         'comentarios': comentarios,
         'tempo_total': tempo_total,
+        'registros_gerais_formatados': registros_gerais_formatados,
         'tempos_externos_formatados': tempos_externos_formatados,
+
     })
 
 @login_required
@@ -504,11 +536,6 @@ def relatorio_equipe(request):
         tarefas = tarefas.filter(tipo_id=tipo_id)
     if status:
         tarefas = tarefas.filter(status=status)
-    if is_gerente:
-        if usuario_id:
-            tarefas = tarefas.filter(atribuido_para_id=usuario_id)
-    else:
-        tarefas = tarefas.filter(atribuido_para_id=request.user.id)
 
     total = tarefas.count()
     concluidas = tarefas.filter(status='concluida').count()

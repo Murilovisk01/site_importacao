@@ -39,6 +39,31 @@
         </div>                    
         <hr>
         <h5><strong>Tempo Geral:</strong></h5>
+
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Usuário</th>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Tempo Gasto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registro in registros_gerais_formatados %}
+                    <tr>
+                        <td>{{ registro.usuario }}</td>
+                        <td>{{ registro.inicio }}</td>
+                        <td>{{ registro.fim }}</td>
+                        <td>{{ registro.tempo }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-muted">Nenhum tempo registrado</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <hr>
+        <h5><strong>Tempo Total:</strong></h5>
         {% if tempo_total != "0:00:00" %}
             <div class="alert alert-info">
                 <strong>Tempo total gasto:</strong> {{ tempo_total }}

@@ -660,7 +660,7 @@ def criar_implantador(request):
 @login_required
 @aprovado_required
 def listar_implantador(request):
-    implantadores = Implatacao.objects.all()
+    implantadores = Implatacao.objects.all().order_by('nome')
     return render(request, 'core/tela_implantacao/listar_implantador.html', {'implantadores': implantadores})
 
 @login_required
@@ -782,7 +782,7 @@ def registrar_tempo_manual(request):
             registro.usuario = request.user
             messages.success(request, "Tempo manual criado com sucesso.")
             registro.save()
-            return redirect('meu_relatorio_tempo')  # ou onde desejar
+            return redirect('meu_relatorio_tempo') 
     else:
         form = RegistroTempoForm()
     return render(request, 'core/tela_tempo/registro_tempo_form.html', {'form': form})
@@ -806,6 +806,19 @@ def editar_registro_tempo(request, pk):
         form = RegistroTempoForm(instance=registro)
 
     return render(request, 'core/tela_tempo/registro_tempo_form.html', {'form': form})
+
+def excluir_registro_tempo(request, pk):
+    tempo = get_object_or_404(RegistroTempo, id=pk)
+
+    if request.user != tempo.usuario:
+        return redirect('meu_relatorio_tempo')
+    
+    if request.method == 'POST':
+        tempo.delete()
+        messages.success(request, "Tempo excluido com sucesso.")
+        return redirect('meu_relatorio_tempo')
+    
+    return render(request,'core/confirmar_exclusao.html',{'tempo':tempo})
 
 class TarefaAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):

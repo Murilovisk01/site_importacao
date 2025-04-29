@@ -60,11 +60,11 @@ class TarefaForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)  # Retira o argumento 'user'
         super().__init__(*args, **kwargs)
 
-        self.fields['tipo'].queryset = TipoTarefa.objects.all()
-        self.fields['sistema'].queryset = Sistema.objects.all()
-        self.fields['atribuido_para'].queryset = User.objects.all()
-        self.fields['implatador'].queryset = Implatacao.objects.filter(cargo='implantador')
-        self.fields['analista'].queryset = Implatacao.objects.filter(cargo='analista')
+        self.fields['tipo'].queryset = TipoTarefa.objects.all().order_by('nome')
+        self.fields['sistema'].queryset = Sistema.objects.all().order_by('nome')
+        self.fields['atribuido_para'].queryset = User.objects.all().order_by('username')
+        self.fields['implatador'].queryset = Implatacao.objects.filter(cargo='implantador').order_by('nome')
+        self.fields['analista'].queryset = Implatacao.objects.filter(cargo='analista').order_by('nome')
 
         if kwargs.get('instance'):
             self.fields['tipo'].disabled = True

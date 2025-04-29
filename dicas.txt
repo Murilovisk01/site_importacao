@@ -166,3 +166,19 @@ entrar no containe e rodar comando python
 sudo docker ps
 
 sudo docker exec -it 9374d7fa508c bash
+
+29/03
+
+scp /home/alpha7/Murilo/site_importacao/core/templates/core/tela_tempo/gerenciador_tempo.html murilo.couto@204.216.131.159:~
+sudo mv -f ~/gerenciador_tempo.html /var/www/a7-site-importacao/core/templates/core/tela_tempo/gerenciador_tempo.html
+
+scp /home/alpha7/Murilo/site_importacao/core/views.py murilo.couto@204.216.131.159:~
+sudo mv -f ~/views.py /var/www/a7-site-importacao/core/views.py
+
+scp /home/alpha7/Murilo/site_importacao/core/urls.py murilo.couto@204.216.131.159:~
+sudo mv -f ~/urls.py /var/www/a7-site-importacao/core/urls.py
+
+scp /home/alpha7/Murilo/site_importacao/core/forms.py murilo.couto@204.216.131.159:~
+sudo mv -f ~/forms.py /var/www/a7-site-importacao/core/forms.py
+
+

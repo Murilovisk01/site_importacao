@@ -23,7 +23,7 @@
             <td>{{ tipo.titulo_padrao }}</td>
             <td class="text-end">
                 <a href="{% url 'editar_tipotarefa' tipo.id %}" class="btn btn-sm btn-outline-info mt-2">Editar</a>
-                {%if user == tipo.criado_por%}
+                {% if user.perfil.is_gerente %}
                     <a href="{% url 'excluir_tipo_tarefa' tipo.id %}" class="btn btn-sm btn-outline-danger mt-2 ms-2">Excluir</a>
                 {%endif%} 
             </td>

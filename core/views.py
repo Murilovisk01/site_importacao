@@ -148,7 +148,8 @@ def editar_tipo_tarefa(request, tipo_id):
 def excluir_tipo_tarefa(request, tipo_id):
     tipo = get_object_or_404(TipoTarefa, id=tipo_id)
 
-    if request.user != tipo.criado_por:
+    if not request.user.perfil.is_gerente:
+        messages.error(request, "Você não tem permissão para excluir sistemas.")
         return redirect('listar_tipotarefa')
     
     if request.method == 'POST':
@@ -200,18 +201,20 @@ def editar_sistema(request, sistema_id):
 
 @login_required
 @aprovado_required
-def excluir_sistema(request,sistema_id):
+def excluir_sistema(request, sistema_id):
     sistema = get_object_or_404(Sistema, id=sistema_id)
 
-    if request.user != sistema.criado_por:
+    # Só permite excluir se for gerente
+    if not request.user.perfil.is_gerente:
+        messages.error(request, "Você não tem permissão para excluir sistemas.")
         return redirect('listar_sistemas')
-    
+
     if request.method == 'POST':
         sistema.delete()
-        messages.success(request, "Sistema excluido com sucesso.")
+        messages.success(request, "Sistema excluído com sucesso.")
         return redirect('listar_sistemas')
     
-    return render(request,'core/confirmar_exclusao.html',{'sistema':sistema})
+    return render(request, 'core/confirmar_exclusao.html', {'sistema': sistema})
 
 # Telas Tarefas, criação, edição, exclusão, mover
 @login_required
@@ -258,13 +261,14 @@ def editar_tarefa(request, tarefa_id):
 def excluir_tarefa(request, tarefa_id):
     tarefa = get_object_or_404(Tarefa, id=tarefa_id)
 
-    # Apenas o criador pode excluir
-    if request.user != tarefa.criado_por:
+    # Permite excluir se for o criador ou se for gerente
+    if request.user != tarefa.criado_por and not request.user.perfil.is_gerente:
+        messages.error(request, "Você não tem permissão para excluir esta tarefa.")
         return redirect('dashboard')
 
     if request.method == 'POST':
         tarefa.delete()
-        messages.success(request, "Tarefa excluida com sucesso.")
+        messages.success(request, "Tarefa excluída com sucesso.")
         return redirect('dashboard')
 
     return render(request, 'core/confirmar_exclusao.html', {'tarefa': tarefa})

@@ -168,7 +168,7 @@ sudo docker ps
 sudo docker exec -it 9374d7fa508c bash
 
 29/03
-
+############### ATUALIZAÇÃO ORDENAÇÃO E BOTÃO DE EXCLUIR NO TEMPO 
 scp /home/alpha7/Murilo/site_importacao/core/templates/core/tela_tempo/gerenciador_tempo.html murilo.couto@204.216.131.159:~
 sudo mv -f ~/gerenciador_tempo.html /var/www/a7-site-importacao/core/templates/core/tela_tempo/gerenciador_tempo.html
 
@@ -181,4 +181,15 @@ sudo mv -f ~/urls.py /var/www/a7-site-importacao/core/urls.py
 scp /home/alpha7/Murilo/site_importacao/core/forms.py murilo.couto@204.216.131.159:~
 sudo mv -f ~/forms.py /var/www/a7-site-importacao/core/forms.py
 
+############### PERMISSÃO DE EXCLUSÃO PARA GERENTE MELHORADO NO SISTEMA, TIPO TAREFA E TAREFA
+scp /home/alpha7/Murilo/site_importacao/core/views.py murilo.couto@204.216.131.159:~
+sudo mv -f ~/views.py /var/www/a7-site-importacao/core/views.py
 
+scp /home/alpha7/Murilo/site_importacao/core/templates/core/tela_sistemas/listar_sistemas.html murilo.couto@204.216.131.159:~
+sudo mv -f ~/listar_sistemas.html /var/www/a7-site-importacao/core/templates/core/tela_sistemas/listar_sistemas.html
+
+scp /home/alpha7/Murilo/site_importacao/core/templates/core/tela_tarefas/detalhes_tarefa.html murilo.couto@204.216.131.159:~
+sudo mv -f ~/detalhes_tarefa.html /var/www/a7-site-importacao/core/templates/core/tela_tarefas/detalhes_tarefa.html
+
+scp /home/alpha7/Murilo/site_importacao/core/templates/core/tela_tarefas/listar_tipotarefas.html murilo.couto@204.216.131.159:~
+sudo mv -f ~/listar_tipotarefas.html /var/www/a7-site-importacao/core/templates/core/tela_tarefas/listar_tipotarefas.html

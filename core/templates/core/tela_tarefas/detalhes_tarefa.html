@@ -124,7 +124,7 @@
 
         <div class="mt-4">
             <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn btn-primary">Editar</a>
-            {% if user == tarefa.criado_por %}
+            {% if user == tarefa.criado_por or user.perfil.is_gerente %}
                 <a href="{% url 'excluir_tarefa' tarefa.id %}" class="btn btn-danger ms-2">Excluir</a>
             {% endif %}
             <a href="{% url 'dashboard' %}" class="btn btn-secondary ms-2">Voltar</a>
